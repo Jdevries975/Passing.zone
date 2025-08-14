@@ -1,2 +1,2 @@
-# Wissenshub
-Eine Sammlung von Anleitungen und Dokumentationen
+# Passing.zone
+Eine Sammlung von Ideen, Fragen, To Dos
