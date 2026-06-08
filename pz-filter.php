@@ -87,6 +87,8 @@ function pz_filter_shortcode() {
                     <option value="title_desc">Title Z–A</option>
                     <option value="date_desc" selected>Newest first</option>
                     <option value="date_asc">Oldest first</option>
+                    <option value="difficulty_asc">Difficulty (easy first)</option>
+                    <option value="difficulty_desc">Difficulty (hard first)</option>
                     <option value="random">Random</option>
                 </select>
             </div>
@@ -154,10 +156,12 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
         $args['orderby'] = 'rand';
     } else {
         $orderby_map = [
-            'title_asc'  => ['title' => 'ASC'],
-            'title_desc' => ['title' => 'DESC'],
-            'date_asc'   => ['date'  => 'ASC'],
-            'date_desc'  => ['date'  => 'DESC'],
+            'title_asc'       => ['title' => 'ASC'],
+            'title_desc'      => ['title' => 'DESC'],
+            'date_asc'        => ['date'  => 'ASC'],
+            'date_desc'       => ['date'  => 'DESC'],
+            'difficulty_asc'  => ['date'  => 'DESC'], // re-sorted in PHP below
+            'difficulty_desc' => ['date'  => 'DESC'], // re-sorted in PHP below
         ];
         $args['orderby'] = $orderby_map[ $sort ] ?? ['date' => 'DESC'];
     }
@@ -206,6 +210,32 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
         return '';
     }
 
+    // WP_Query cannot ORDER BY taxonomy term — sort the posts array in PHP.
+    // the_post() reads from $query->posts sequentially, so in-place sort works.
+    if ( $sort === 'difficulty_asc' || $sort === 'difficulty_desc' ) {
+        // Rank map matches the star SVG assignments in style.css
+        $difficulty_rank = [
+            'beginner'     => 1,
+            'intermediate' => 2,
+            'advanced'     => 3,
+            'expert'       => 4,
+        ];
+        $dir = $sort === 'difficulty_asc' ? 1 : -1;
+        $ranks = [];
+        foreach ( $query->posts as $p ) {
+            $t = get_the_terms( $p->ID, 'pattern-difficulty' );
+            if ( $t && ! is_wp_error( $t ) ) {
+                $class = preg_replace( '/^\d+-/', '', sanitize_html_class( $t[0]->slug ) );
+                $ranks[ $p->ID ] = $difficulty_rank[ $class ] ?? PHP_INT_MAX;
+            } else {
+                $ranks[ $p->ID ] = PHP_INT_MAX;
+            }
+        }
+        usort( $query->posts, function( $a, $b ) use ( $ranks, $dir ) {
+            return ( $ranks[ $a->ID ] - $ranks[ $b->ID ] ) * $dir;
+        } );
+    }
+
     $output     = '';
     $card_index = 0;
 
@@ -214,31 +244,27 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
         $id = get_the_ID();
 
         // Terms for the badges
-        $juggler_terms     = get_the_terms($id, 'number-of-jugglers');
-        $juggler_labels    = ( $juggler_terms && ! is_wp_error($juggler_terms) )
-            ? array_map('esc_html', wp_list_pluck($juggler_terms, 'name'))
-            : [];
+        $juggler_terms = get_the_terms($id, 'number-of-jugglers');
+        $juggler_terms = ( $juggler_terms && ! is_wp_error($juggler_terms) ) ? $juggler_terms : [];
 
         $difficulty_terms = get_the_terms($id, 'pattern-difficulty');
         $difficulty_terms = ( $difficulty_terms && ! is_wp_error($difficulty_terms) ) ? $difficulty_terms : [];
 
-        $type_terms        = get_the_terms($id, 'pattern-type');
-        $type_labels       = ( $type_terms && ! is_wp_error($type_terms) )
-            ? array_map('esc_html', wp_list_pluck($type_terms, 'name'))
-            : [];
+        $type_terms = get_the_terms($id, 'pattern-type');
+        $type_terms = ( $type_terms && ! is_wp_error($type_terms) ) ? $type_terms : [];
 
-        $tag_terms         = get_the_terms($id, 'pattern-tag');
-        $tag_labels        = ( $tag_terms && ! is_wp_error($tag_terms) )
-            ? array_map('esc_html', wp_list_pluck($tag_terms, 'name'))
-            : [];
+        $tag_terms  = get_the_terms($id, 'pattern-tag');
+        $tag_terms  = ( $tag_terms && ! is_wp_error($tag_terms) ) ? $tag_terms : [];
 
         // ── Card ──
+        // Tags are outside the card <a> to allow valid nested links.
         $url = esc_url( get_permalink() );
 
-        $hidden = $card_index >= 12 ? ' pz-card--hidden' : '';
+        $hidden = $card_index >= 100 ? ' pz-card--hidden' : '';
         $output .= '<article class="pz-card' . $hidden . '">';
         $output .= '<a href="' . $url . '" class="pz-card__link">';
         $output .= '<h3 class="pz-card__name">' . esc_html( get_the_title() ) . '</h3>';
+        $output .= '</a>';
 
         $output .= '<div class="pz-card__tags">';
         foreach ( $difficulty_terms as $term ) {
@@ -248,18 +274,32 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
                 . '<i class="' . esc_attr( $class ) . '" title="' . esc_attr( $term->name ) . '"></i>'
                 . '</span>';
         }
-        foreach ( $juggler_labels as $label ) {
-            $output .= '<span class="pz-card__tag pz-card__tag--jugglers">' . $label . '</span>';
+        foreach ( $juggler_terms as $term ) {
+            $link = get_term_link( $term );
+            if ( is_wp_error( $link ) ) {
+                $output .= '<span class="pz-card__tag pz-card__tag--jugglers">' . esc_html( $term->name ) . '</span>';
+            } else {
+                $output .= '<a href="' . esc_url( $link ) . '" class="pz-card__tag pz-card__tag--jugglers">' . esc_html( $term->name ) . '</a>';
+            }
         }
-        foreach ( $type_labels as $label ) {
-            $output .= '<span class="pz-card__tag pz-card__tag--type">' . $label . '</span>';
+        foreach ( $type_terms as $term ) {
+            $link = get_term_link( $term );
+            if ( is_wp_error( $link ) ) {
+                $output .= '<span class="pz-card__tag pz-card__tag--type">' . esc_html( $term->name ) . '</span>';
+            } else {
+                $output .= '<a href="' . esc_url( $link ) . '" class="pz-card__tag pz-card__tag--type">' . esc_html( $term->name ) . '</a>';
+            }
         }
-        foreach ( $tag_labels as $label ) {
-            $output .= '<span class="pz-card__tag pz-card__tag--tag">' . $label . '</span>';
+        foreach ( $tag_terms as $term ) {
+            $link = get_term_link( $term );
+            if ( is_wp_error( $link ) ) {
+                $output .= '<span class="pz-card__tag pz-card__tag--tag">' . esc_html( $term->name ) . '</span>';
+            } else {
+                $output .= '<a href="' . esc_url( $link ) . '" class="pz-card__tag pz-card__tag--tag">' . esc_html( $term->name ) . '</a>';
+            }
         }
         $output .= '</div>';
 
-        $output .= '</a>'; // .pz-card__link
         $output .= '</article>'; // .pz-card
         $card_index++;
     }
@@ -271,7 +311,75 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. AJAX HANDLER
+// 3. ARCHIVE SHORTCODE
+//    Simplified version for taxonomy archive pages: search + sort only.
+//    Usage in Beaver Builder Themer layout for pattern taxonomies: [pz_archive]
+// ─────────────────────────────────────────────────────────────────────────────
+
+function pz_render_cards_archive( string $taxonomy, string $term_slug, string $name = '', string $sort = 'date_desc' ): string {
+    $jugglers   = $taxonomy === 'number-of-jugglers' ? $term_slug : '';
+    $difficulty = $taxonomy === 'pattern-difficulty'  ? $term_slug : '';
+    $type       = $taxonomy === 'pattern-type'        ? $term_slug : '';
+    $tag        = $taxonomy === 'pattern-tag'         ? $term_slug : '';
+    return pz_render_cards( $name, $jugglers, $difficulty, $type, $tag, $sort );
+}
+
+function pz_archive_shortcode(): string {
+    $term = get_queried_object();
+
+    if ( ! ( $term instanceof WP_Term ) ) {
+        return '';
+    }
+
+    ob_start(); ?>
+
+    <div class="pz-filter-wrap"
+         data-ajaxurl="<?= esc_url( admin_url('admin-ajax.php') ) ?>"
+         data-nonce="<?= esc_attr( wp_create_nonce('pz_filter_nonce') ) ?>"
+         data-archive-taxonomy="<?= esc_attr( $term->taxonomy ) ?>"
+         data-archive-term="<?= esc_attr( $term->slug ) ?>">
+
+        <div class="pz-filter-controls pz-filter-controls--archive">
+
+            <div class="pz-filter-field pz-filter-field--sort">
+                <label for="pz-filter-sort">Sort by</label>
+                <select id="pz-filter-sort">
+                    <option value="title_asc">Title A–Z</option>
+                    <option value="title_desc">Title Z–A</option>
+                    <option value="date_desc" selected>Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="difficulty_asc">Difficulty (easy first)</option>
+                    <option value="difficulty_desc">Difficulty (hard first)</option>
+                    <option value="random">Random</option>
+                </select>
+            </div>
+
+        </div>
+
+        <p class="pz-results-count"></p>
+
+        <div id="pz-results" class="pz-grid">
+            <?= pz_render_cards_archive( $term->taxonomy, $term->slug ) ?>
+        </div>
+
+        <div id="pz-no-results" style="display:none;">
+            <p>No patterns found for these filters. Please try again.</p>
+        </div>
+
+        <div id="pz-load-more-wrap" style="display:none;">
+            <button class="btn-primary btn-show-more" type="button" id="pz-load-more">Load more</button>
+        </div>
+
+    </div>
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'pz_archive', 'pz_archive_shortcode' );
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. AJAX HANDLER
 //    Responds to JS requests with freshly rendered cards.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -280,14 +388,21 @@ function pz_ajax_filter(): void {
     // Security check
     check_ajax_referer('pz_filter_nonce', 'nonce');
 
-    $name       = isset($_POST['name'])       ? sanitize_text_field(wp_unslash($_POST['name']))       : '';
-    $jugglers   = isset($_POST['jugglers'])   ? sanitize_text_field(wp_unslash($_POST['jugglers']))   : '';
-    $difficulty = isset($_POST['difficulty']) ? sanitize_text_field(wp_unslash($_POST['difficulty'])) : '';
-    $type       = isset($_POST['type'])       ? sanitize_text_field(wp_unslash($_POST['type']))       : '';
-    $tag        = isset($_POST['tag'])        ? sanitize_text_field(wp_unslash($_POST['tag']))        : '';
-    $sort       = isset($_POST['sort'])       ? sanitize_text_field(wp_unslash($_POST['sort']))       : 'date_desc';
+    $name             = isset($_POST['name'])             ? sanitize_text_field(wp_unslash($_POST['name']))             : '';
+    $sort             = isset($_POST['sort'])             ? sanitize_text_field(wp_unslash($_POST['sort']))             : 'date_desc';
+    $archive_taxonomy = isset($_POST['archive_taxonomy']) ? sanitize_text_field(wp_unslash($_POST['archive_taxonomy'])) : '';
+    $archive_term     = isset($_POST['archive_term'])     ? sanitize_text_field(wp_unslash($_POST['archive_term']))     : '';
 
-    $html  = pz_render_cards($name, $jugglers, $difficulty, $type, $tag, $sort);
+    if ( $archive_taxonomy !== '' && $archive_term !== '' ) {
+        $html = pz_render_cards_archive( $archive_taxonomy, $archive_term, $name, $sort );
+    } else {
+        $jugglers   = isset($_POST['jugglers'])   ? sanitize_text_field(wp_unslash($_POST['jugglers']))   : '';
+        $difficulty = isset($_POST['difficulty']) ? sanitize_text_field(wp_unslash($_POST['difficulty'])) : '';
+        $type       = isset($_POST['type'])       ? sanitize_text_field(wp_unslash($_POST['type']))       : '';
+        $tag        = isset($_POST['tag'])        ? sanitize_text_field(wp_unslash($_POST['tag']))        : '';
+        $html = pz_render_cards( $name, $jugglers, $difficulty, $type, $tag, $sort );
+    }
+
     $count = $html ? substr_count($html, '<article class="pz-card') : 0;
 
     wp_send_json_success([
@@ -313,7 +428,8 @@ function pz_shortcode_is_needed(): bool {
     global $post;
 
     // Regular post/page with the shortcode directly in its content
-    if ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'pz_filter' ) ) {
+    if ( is_a( $post, 'WP_Post' ) &&
+         ( has_shortcode( $post->post_content, 'pz_filter' ) || has_shortcode( $post->post_content, 'pz_archive' ) ) ) {
         return true;
     }
 
@@ -333,7 +449,8 @@ function pz_shortcode_is_needed(): bool {
 
     foreach ( $layout_ids as $id ) {
         $bb_data = get_post_meta( $id, '_fl_builder_data', true );
-        if ( $bb_data && str_contains( maybe_serialize( $bb_data ), 'pz_filter' ) ) {
+        $serialized = maybe_serialize( $bb_data );
+        if ( $bb_data && ( str_contains( $serialized, 'pz_filter' ) || str_contains( $serialized, 'pz_archive' ) ) ) {
             set_transient( 'pz_filter_in_themer_layout', 1, DAY_IN_SECONDS );
             return true;
         }

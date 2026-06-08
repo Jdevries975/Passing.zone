@@ -20,14 +20,16 @@
 
     function getFilters() {
         return {
-            action:     'pz_filter',
-            nonce:      pzFilter.nonce,
-            name:       $('#pz-filter-name').val().trim(),
-            jugglers:   $('#pz-filter-jugglers').val(),
-            difficulty: $('#pz-filter-difficulty').val(),
-            type:       $('#pz-filter-type').val(),
-            tag:        $('#pz-filter-tag').val(),
-            sort:       $('#pz-filter-sort').val(),
+            action:           'pz_filter',
+            nonce:            pzFilter.nonce,
+            name:             ($('#pz-filter-name').val() || '').trim(),
+            jugglers:         $('#pz-filter-jugglers').val() || '',
+            difficulty:       $('#pz-filter-difficulty').val() || '',
+            type:             $('#pz-filter-type').val() || '',
+            tag:              $('#pz-filter-tag').val() || '',
+            sort:             $('#pz-filter-sort').val(),
+            archive_taxonomy: $wrap.data('archive-taxonomy') || '',
+            archive_term:     $wrap.data('archive-term') || '',
         };
     }
 
