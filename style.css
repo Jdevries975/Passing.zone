@@ -8,7 +8,7 @@
  Version:      0.1
 */
 :root{
-	--pz-dark: #33225D; 
+	--pz-dark: #33225D;
 	--pz-medium: #472779;
 	--pz-light: #552F8C;
 	--pz-flieder: #9682b4;
@@ -18,7 +18,7 @@
 	--pz-tuerkis: #00b3ff;
 	--pz-orange: #f9a500;
 	--pz-mint: #cbf7d4;
-	--pz-accent: #00b3ff;
+	/* --pz-accent entfernt: war identisch mit --pz-tuerkis und wurde nicht verwendet */
 }
 ::selection {
 	color: #fff;
@@ -30,7 +30,7 @@ h1, h2, .main-title, .obelix  {
 body, .quicksand {
 	font-family: 'Quicksand';
 	font-weight: 400;
-	font-size: clamp(14px, 0.9vw + 11px, 20px);
+	font-size: clamp(12px, 0.9vw + 11px, 16px);
 	
 }
 /* Admin menu must not overlap page menu on mobile*/
@@ -45,8 +45,8 @@ body, .quicksand {
 		
         height: 42px !important; /* Admin-Bar-Höhe anpassen */
     }
-    html {
-        margin-top: 42px !important; /* Push Header unten */
+    html.admin-bar {
+        margin-top: 42px !important; /* Push Header unten – nur wenn Admin-Bar sichtbar */
     }
 }
 
@@ -162,7 +162,7 @@ body, .quicksand {
     padding: 0px;
 	flex-wrap: nowrap;
     width: 100%;
-    overflow: unset !important; /*to get over a four line long from the plugin*/
+    overflow: unset !important; /* WPC-Plugin setzt overflow:hidden auf ul, das verhindert den Scroll-Slider */
 }
 
 .slider-track {
@@ -302,7 +302,7 @@ body, .quicksand {
 	color: var(--pz-dark);
 }
 .wpc-filters-main-wrap a.wpc-filters-reset-button:hover {
-	border-color: color: var(--pz-dark) !important;
+	border-color: var(--pz-dark) !important;
 	color: var(--pz-dark);
 }
 .wpc-filters-main-wrap a.wpc-filters-submit-button {
@@ -409,7 +409,6 @@ body, .quicksand {
 
 /* Single post meta data*/
 .type-post .entry-meta {
-	margin-top: 0px;
 	max-width: 1160px;
 	margin: 0 auto;
 }
@@ -464,7 +463,7 @@ body, .quicksand {
 }
 @media screen and (max-width: 768px) {
 	.wpc-custom-selected-terms:not(.wpc-show-on-mobile) {
-		display: inline-block !important;
+		display: inline-block !important; /* Plugin-Klasse versteckt das Element auf Mobile, wir wollen es sichtbar */
 	}
 	.wpc-custom-selected-terms code {
 		font-family: 'Quicksand';
@@ -503,7 +502,7 @@ body, .quicksand {
 }
 .archive-tags {
 	margin-top: 0px;
-	margin-bottom: -0px;
+	margin-bottom: 0;
 	font-size: 14px;
 }
 .archive-difficulty {
@@ -576,17 +575,6 @@ img.cookie-logo.brlbs-dialog-logo.brlbs-mr-2{
 .pz_filter_sort h2, .pz_filter_sort p {
 	display: none;
 }
-/* Posts */
-type-post .entry-meta {
-	max-width: 1160px;
-	margin: 0 auto 2% auto;
-}
-type-post .entry-header .entry-meta {
-	background: var(--pz-dark);
-	color: #fff !important;
-	margin: 0 auto;
-}
-
 /* Page Resources */
 .resource-column {
 	float: none;
