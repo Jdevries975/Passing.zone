@@ -169,6 +169,45 @@ body, .quicksand {
     display: flex;
     /*transition: transform 0.3s ease;*/
 }
+/*slider start page*/
+.wpc-filters-section.wpc-filter-number-of-jugglers {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wpc-filter-number-of-jugglers .wpc-filter-number-of-jugglers {
+    overflow: hidden;
+    width: 100%;
+    max-width: 600px; /* adjust as needed */
+}
+
+.wpc-filter-number-of-jugglers ul {
+    display: flex;
+	margin: 0 30px;
+    transition: transform 0.3s ease;
+    padding: 0;
+    list-style: none;
+}
+
+.wpc-filter-number-of-jugglers li {
+    flex: 0 0 33.3333%; /* 3 items visible */
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.slider-arrow {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.slider-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
 
 /*Hide count on mobile, due to limited space*/
 .wpc-filters-section .wpc-term-count {
