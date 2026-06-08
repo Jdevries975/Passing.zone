@@ -92,7 +92,7 @@ function pz_filter_shortcode() {
             </div>
 
             <div class="pz-filter-field pz-filter-field--reset">
-                <button class="btn-primary" type="button" id="pz-filter-reset">Reset filter</button>
+                <button class="btn-primary btn-reset" type="button" id="pz-filter-reset">Reset filter</button>
             </div>
 
         </div><!-- .pz-filter-controls -->
@@ -107,12 +107,12 @@ function pz_filter_shortcode() {
 
         <!-- No results message -->
         <div id="pz-no-results" style="display:none;">
-            <p>No patterns found for these filters. Please try with different filters.</p>
+            <p>No patterns found for these filters. Please try again.</p>
         </div>
 
         <!-- Load more -->
         <div id="pz-load-more-wrap" style="display:none;">
-            <button class="btn-primary" type="button" id="pz-load-more">Load more</button>
+            <button class="btn-primary btn-show-more" type="button" id="pz-load-more">Load more</button>
         </div>
 
     </div><!-- .pz-filter-wrap -->
