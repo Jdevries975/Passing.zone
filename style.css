@@ -1,0 +1,759 @@
+/*
+ Theme Name:   Passing.zone
+ Theme URI:    https://generatepress.com
+ Description:  Default GeneratePress child theme
+ Author:       Juliane de Vries Webentwicklung <ju:like>
+ Author URI:   https://ju-like.de
+ Template:     generatepress
+ Version:      0.1
+*/
+:root{
+	--pz-dark: #33225D; 
+	--pz-medium: #472779;
+	--pz-light: #552F8C;
+	--pz-flieder: #9682b4;
+	--pz-mittelflieder: #ddd6ea;
+	--pz-hellflieder: #eeebf4;
+	--pz-lightgrey: #DADADA;
+	--pz-tuerkis: #00b3ff;
+	--pz-orange: #f9a500;
+	--pz-mint: #cbf7d4;
+	--pz-accent: #00b3ff;
+}
+::selection {
+	color: #fff;
+	background: var(--pz-tuerkis);
+}
+h1, h2, .main-title, .obelix  {
+	font-family: 'Obelix Pro', sans-serif;
+}
+body, .quicksand {
+	font-family: 'Quicksand';
+	font-weight: 400;
+	font-size: clamp(14px, 0.9vw + 11px, 20px);
+	
+}
+/* Admin menu must not overlap page menu on mobile*/
+@media (max-width: 782px) {
+	#wp-admin-bar-new-content {
+		display:none !important;
+	}
+    #wpadminbar {
+        position: fixed !important;
+        top: 0;
+        z-index: 9999;
+		
+        height: 42px !important; /* Admin-Bar-Höhe anpassen */
+    }
+    html {
+        margin-top: 42px !important; /* Push Header unten */
+    }
+}
+
+/* main menu overlay no margin*/
+.pz-burger .fl-menu .menu {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	padding-right: 3%;
+}
+@media screen and (min-width:768px) {
+	.pz-burger .fl-menu .menu {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	padding-right: 5%;
+	padding-left: 70%;
+	}
+}
+
+.generate-back-to-top {
+		width: 21px;
+		height: 21px;
+		padding: 0px;
+		padding-bottom: 4px;
+		line-height: 1px;
+		position: fixed;
+  		bottom: 3px;
+  		right: 3px;
+}
+@media screen and (min-width: 768px) {
+	.mobile-only {
+		display:none;
+	}
+	.generate-back-to-top {
+		width: 42px;
+		height: 42px;
+		padding: 10px;
+		line-height: 1em;
+		position: fixed;
+  		bottom: 15px;
+  		right: 15px;
+	}
+}
+/* 2025-11-26 jdev Image size in search dropdown */
+#ajaxsearchprores2_1.vertical .results .item .asp_image, #ajaxsearchprores2_2.vertical .results .item .asp_image, div.asp_r.asp_r_2.vertical .results .item .asp_image {
+  width: 110px !important;
+  height: 70px;
+  margin: 2px 8px 0 0;
+}
+/**************************** Startseite   ********/
+/*todo: DOES NOT WORK ATM @JULI: help, pls
+ * War das zum Verstecken der Filter? Brauchen wir nicht mehr, oder?
+ * 
+.wpc-filter-pattern-type, .wpc-filter-pattern-tag {
+	visibility:hidden;
+	animation-fill-mode: forwards;
+	animation: 5s fadeInCustom;
+}
+@keyframes fadeInCustom {
+  99% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
+  }
+}
+*/
+/* Startseite Filter Buttons*/
+.wpc-term-item-content-wrapper:has(input:checked) {
+    border: 1px white solid;
+	border-radius: 7px;
+}
+.fl-node-7k3is498a6l1 .wpc-filters-main-wrap .wpc-radio-item .wpc-term-item-content-wrapper {
+	margin: 0 0 0 7px;
+}
+
+.wpc-filter-taxonomy .wpc-filter-header .wpc-filter-title button {
+	font-size: 17px;
+}
+
+.slider-next, .slider-prev {
+    position: absolute;
+    left: -10px;
+    top: 38%;
+    transform: translateY(-50%);
+    background: var(--pz-dark);
+    cursor: pointer;
+    z-index: 10;
+    font-size: 20px;
+    border-radius: 3px;
+    opacity: 1;
+	padding: 25px 5px;
+}
+
+.slider-next:hover, .slider-prev:hover{
+	background: #433072;
+}
+
+.slider-next:focus, .slider-prev:focus{
+	background: var(--pz-dark);
+}
+
+.slider-next.disabled, .slider-prev.disabled {
+	background: var(--pz-dark);
+}
+
+.wpc-filters-section.wpc-filter-number-of-jugglers .slider-track ul.wpc-filters-ul-list {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+	flex-wrap: nowrap;
+    width: 100%;
+    overflow: unset !important; /*to get over a four line long from the plugin*/
+}
+
+.slider-track {
+    display: flex;
+    /*transition: transform 0.3s ease;*/
+}
+
+/*Hide count on mobile, due to limited space*/
+.wpc-filters-section .wpc-term-count {
+	display:none;
+}
+.wpc-filters-main-wrap li.wpc-term-item a {
+	margin-right:0
+}
+@media screen and (min-width:768px) {
+	.wpc-filters-section .wpc-term-count {
+		display:inline
+	}
+	.wpc-filters-main-wrap li.wpc-term-item a {
+		margin-right:8px
+}
+}
+
+.slider-nav.slider-next .wpc-open-icon, .slider-nav.slider-prev .wpc-open-icon{
+    content: "";
+    width: 9px;
+    min-width: 9px;
+    height: 9px;
+    display: block;
+    transform: rotate(-135deg);
+    position: relative;
+}
+
+.slider-nav.slider-next .wpc-open-icon.arrow-right{
+	border-left: 1px solid #8a8a8a;
+    border-bottom: 1px solid #8a8a8a;
+	right: 3px;
+}
+
+.slider-nav.slider-prev .wpc-open-icon.arrow-left{
+	border-right: 1px solid #8a8a8a;
+    border-top: 1px solid #8a8a8a;
+	right: 0px;
+}
+
+/*.wpc-filter-number-of-jugglers .wpc-filter-number-of-jugglers {
+	max-width: 80vw;
+}*/
+.wpc-filter-number-of-jugglers .wpc-filter-number-of-jugglers .wpc-filter-link {
+	margin-right: 0px;
+}
+
+.wpc-filter-number-of-jugglers label[for^="wpc-radio-taxonomy-number-of-jugglers"] {
+	display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+
+.wpc-open-icon, .wpc-open-icon:hover, .wpc-filter-collapsible .wpc-filter-title button:hover .wpc-open-icon {
+    border-color: #b8bcc8 !important;
+}
+
+#ajaxsearchpro2_1 .probox {
+	margin: unset !important;
+}
+
+.wpc-filters-ul-list {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.wpc-filter-pattern-difficulty .wpc-term-item-content-wrapper {
+	/*background: #3c286dff;*/
+    padding: 13px;
+	/*border-radius: 10px;*/
+}
+.wpc-filter-pattern-difficulty ul.wpc-filters-ul-list{
+	display: flex;
+    justify-content: center;
+}
+
+.wpc-filter-pattern-difficulty .wpc-filters-ul-list li {
+	display: inline-block;
+	margin-right: 15px;
+	background: #3c286dff;
+	border-radius: 10px;
+	width: 40%;
+}
+
+.wpc-filters-section a:hover {
+	border-color: #fff!important;
+}
+.wpc-filters-main-wrap a.wpc-filters-reset-button {
+	width: 25% !important;
+  	background-color: var(--pz-mittelflieder) !important;
+	border-color: var(--pz-dark) !important;
+	color: var(--pz-dark);
+}
+.wpc-filters-main-wrap a.wpc-filters-reset-button:hover {
+	border-color: color: var(--pz-dark) !important;
+	color: var(--pz-dark);
+}
+.wpc-filters-main-wrap a.wpc-filters-submit-button {
+	width: 73% !important;
+	background-color: var(--pz-medium) !important;
+	border-color: var(--pz-medium) !important;
+}
+.wpc-filters-main-wrap a.wpc-filters-submit-button:hover {
+	background-color: var(--pz-dark) !important;
+	border-color: #fff !important;
+}
+/* Startseite Slider for new patterns*/
+.pp-post-img {
+	border-radius: 8px 8px 0 0;
+}
+.pp-content-grid-post .pp-content-category-list, .pp-content-carousel-post .pp-content-category-list {
+  margin-top: 8px;
+  padding-top: 0px;
+  border-top: none !important;
+}
+/* Site: 27 Scrambleds*/
+.post-2524 h3 {
+	font-size: 1.2rem;
+	text-align: center;
+	margin-bottom: -25px !important;
+	height: 50px;
+}
+
+/**************************************************************************************************************** PMP Pro Pages*/
+/* Registration Page*/
+.page-id-1480 .pmpro_akismet_privacy_notice, .page-id-1480 .pmpro_akismet_privacy_notice a {
+	color: white !important;
+}
+/* Your Profile*/
+.pmpro_btn-submit-update-profile {
+	color: white !important;
+}
+/* Your membership*/
+.pmpro_card_title {
+	color: var(--pz-dark) !important;
+}
+/*** Difficulty displayed with stars image above****/
+
+.stars .expert::before {
+		content:url("/wp-content/uploads/4stars.svg"); 
+	}
+.stars .advanced::before {
+		content:url("/wp-content/uploads/3stars.svg"); 
+	}
+.stars .intermediate::before {
+		content:url("/wp-content/uploads/2stars.svg"); 
+	}
+.stars .beginner::before {
+		content:url("/wp-content/uploads/1stars.svg"); 
+	}
+
+.pz-difficulty-wrapper {
+	margin: auto;
+	text-align: center;
+}
+.pz-difficulty-wrapper a {
+	text-decoration: none;
+}
+.pz-difficulty-wrapper .pz-difficulty-text {
+	padding: 3px 10px 5px 10px;
+	background: var(--pz-dark);
+	border: 1px solid var(--pz-dark);
+	border-radius: 5px;
+	display: inline-block;
+	margin-top: 5px;
+	font-size: 14px;
+}
+/**** Styling for all categories and tags*/
+.pz-flex {
+	display: flex;
+	flex-direction: row;
+}
+.pz-cats-tags {
+	margin: auto;	
+}
+.pz-cats-tags a, a.pp-post-meta-term {
+	color: #fff !important;
+	padding: 0px 5px;
+	/*background: var(--pz-dark);*/
+	background: var(--pz-dark);
+	border: 1px solid var(--pz-dark);
+	border-radius: 5px;
+	text-decoration: none;
+	margin-right: 5px;
+}
+
+/*@Juli: das muss wohl iwo im clicki bunti eingestellt werde, oder?*/
+.fl-node-gyl7k0oapwz3 .pp-content-post-grid {
+	grid-gap: 0px	
+}
+
+.pz-cats-tags a:hover, .pz-difficulty-wrapper .pz-difficulty-text:hover, a.pp-post-meta-term:hover {
+	border: 1px solid #fff;
+	color: #fff !important;
+} 
+
+/*************************************************************************** Themer Layouts */
+/* Single Pattern layout */ 
+
+/* Single post meta data*/
+.type-post .entry-meta {
+	margin-top: 0px;
+	max-width: 1160px;
+	margin: 0 auto;
+}
+.post .entry-date.published, .post .byline {
+	color: #fff;
+}
+.type-post .entry-header  {
+	background: var(--pz-dark);
+}
+.type-post .entry-header .entry-meta a {
+	color: #fff !important;
+}
+.type-post .entry-header .entry-meta a:hover {
+	color: var(--pz-mint) !important;
+}
+.type-post .entry-content:not(:first-child), .type-post .entry-summary:not(:first-child), .type-post .page-content:not(:first-child) { 
+  margin-top: 0;
+}
+/* Single Post, author box*/
+.pz-authorbox i {
+	color: var(--pz-medium);
+}
+.pz-author-couch p::before {
+	content: url("/wp-content/uploads/couchclub.svg");
+}
+/* Author Archive*/
+.fl-post-feed-post {
+	border-bottom: 1px solid #fff;
+}
+/* Footer-Menu, Name attribution in the menu-item*/
+.menu-name {
+	font-size: 0.7rem;
+	color: #7F64A5;
+}
+
+
+/**************************************************** Pattern Archives ************************************/
+/* Patterns search Archive, Filters */
+.wpc-custom-selected-terms code {
+	font-family: 'Obelix Pro';
+	line-height: 20px;
+	font-size: 100%;
+}
+.wpc-custom-selected-terms .wpc-chip-content {
+	padding: 5px 10px;
+	background: var(--pz-dark);
+	border-radius: 8px !important;
+}
+.wpc-filter-chips-list a, body .wpc-filter-chips-list li.wpc-filter-chip a {	
+	background: var(--pz-dark);
+	border-radius: 8px !important;
+}
+@media screen and (max-width: 768px) {
+	.wpc-custom-selected-terms:not(.wpc-show-on-mobile) {
+		display: inline-block !important;
+	}
+	.wpc-custom-selected-terms code {
+		font-family: 'Quicksand';
+		line-height: 20px;
+		font-size: 100%;
+	}
+}
+/*2025-11 jdev Pattern archives custom list ----  for everything larger than 768px*/
+.pattern-card {
+	padding: 10px 18px;
+	font-size: 14px;
+	border-bottom: 1px solid white;
+    background: #311e5d;
+}
+.pattern-list-mobile .pattern-card {
+	padding: 0px;
+	font-size: 12px;
+}
+	
+.pattern-title {
+	font-family: 'Quicksand';
+	font-size: 1.5rem;
+	margin-bottom: 10px;
+	margin-top: 0px;
+}
+.pattern-list-mobile .pattern-title {
+	font-size: 1.1rem;
+	padding: 5px 0;
+}
+.pattern-title a:hover {
+	color: var(--pz-orange) !important;
+}
+/* The hidden details: Date, juggled at, Featured Image and Extract*/
+.archive-extras {
+	display: none;  	
+}
+.archive-tags {
+	margin-top: 0px;
+	margin-bottom: -0px;
+	font-size: 14px;
+}
+.archive-difficulty {
+		display: inline-block;
+		margin-top: 0px;
+		font-size: 14px;
+	}
+.archive-tags a, .single-tags a {
+	display: inline-block;
+	margin-bottom: 5px;
+}
+.pattern-image img {
+	border-radius: 8px;
+	max-width: 400px;
+	margin-bottom: 10px;
+	}
+.pattern-list-mobile .pattern-image img {
+	border-radius: 8px;
+	max-width: 300px;
+	margin-bottom: 10px;
+	}
+.pattern-image {
+	float: left;
+}
+.pattern-excerpt {
+  		margin: 0 20px;
+		float: left;
+}
+/* Die automatisch entstehenden "weiterlesen" ausblenden*/
+a.read-more {
+	display: none;
+}
+/* Mobile version*/
+
+
+/*Filter styling*/
+.pz_filter_sort .wpc-sorting-form {
+	position: relative
+}
+
+.pz_filter_sort .wpc-sorting-form::after {
+	font-family: "Font Awesome 6 Free"; 
+	content: "\f0dc"; 
+	color: white;
+	font-weight: 600;
+    position: absolute;
+    right: 14px;
+    top: 8px;
+}
+
+.pz_filter_sort select {
+	background: #472779;
+}
+
+.pz_filter_sort option:hover {
+	background: #9682b4;
+}
+
+/* Borlabs Logo weg
+img.cookie-logo.brlbs-dialog-logo.brlbs-mr-2{
+	display:none;
+}*/
+
+.pz_filter_sort select.wpc-orderby-select {
+	background: #472779;
+	padding: 9px 24px;
+	border-radius: 5px;
+}
+
+.pz_filter_sort h2, .pz_filter_sort p {
+	display: none;
+}
+/* Posts */
+type-post .entry-meta {
+	max-width: 1160px;
+	margin: 0 auto 2% auto;
+}
+type-post .entry-header .entry-meta {
+	background: var(--pz-dark);
+	color: #fff !important;
+	margin: 0 auto;
+}
+
+/* Page Resources */
+.resource-column {
+	float: none;
+	margin: 0 auto;
+}
+h3.resource-heading {
+	color: #fff;
+	background: var(--pz-medium);
+	padding: 20px;
+	border-radius: 25px 25px 0px 0px;
+	margin-bottom: 0;
+}
+.resource-menu {
+	margin: 0 20px 20px 20px;
+	border: 2px solid var(--pz-medium);
+}
+/* ── Felder (Input, Textarea, Select) ── */
+.nf-form-content .nf-field-container input[type="text"],
+.nf-form-content .nf-field-container input[type="email"],
+.nf-form-content .nf-field-container input[type="tel"],
+.nf-form-content .nf-field-container input[type="number"],
+.nf-form-content .nf-field-container input[type="url"],
+.nf-form-content .nf-field-container input[type="password"],
+.nf-form-content .nf-field-container input[type="date"],
+.nf-form-content .nf-field-container textarea,
+.nf-form-content .nf-field-container select {
+  	background-color: var(--pz-hellflieder) !important;
+  	border: 2px solid var(--pz-dark) !important;
+  	border-radius: 8px !important;
+  	color: var(--pz-dark) !important;
+  	padding: 10px 14px !important;
+	box-shadow: none !important;
+}
+
+.nf-form-content .nf-field-container input:focus,
+.nf-form-content .nf-field-container textarea:focus,
+.nf-form-content .nf-field-container select:focus {
+  border-color: var(--pz-medium) !important;
+  box-shadow: none;
+  outline: none !important;
+}
+/* TExtarea wrapper*/
+.nf-form-content .nf-field-container.textarea-container .field-wrap {
+  background-color: var(--pz-hellflieder) !important;
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--pz-dark) !important;
+  color: var(--pz-dark) !important;
+  padding: 10px;
+  border-radius: 8px;
+}
+.ql-toolbar.ql-snow {
+	border-radius: 8px 8px 0px 0px !important;
+}
+
+
+/* ── Checkboxes & Radios ── */
+.nf-form-content input[type="checkbox"]:checked,
+.nf-form-content input[type="radio"]:checked {
+  accent-color: var(--pz-dark);
+}
+
+/* ── Labels ── */
+.nf-form-content .nf-field-label label {
+  color: var(--pz-dark) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Pflichtfeld-Stern ── */
+.nf-form-content .ninja-forms-req-symbol, .ninja-forms-req-symbol {
+	font-size: 1.5em !important;
+  color: var(--pz-orange) !important;
+	position: relative;
+	top: 4px;
+}
+
+/* ── Buttons (Submit & andere) ── */
+.nf-form-content input[type="button"],
+.nf-form-content input[type="submit"],
+.nf-form-content button.ninja-forms-field,
+.nf-form-content .nf-field-container input.submit-wrap input {
+  background-color: var(--pz-dark) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  padding: 12px 28px !important;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.nf-form-content input[type="button"]:hover,
+.nf-form-content input[type="submit"]:hover,
+.nf-form-content button.ninja-forms-field:hover,
+.nf-form-content .nf-field-container input.submit-wrap input:hover {
+  background-color: var(--pz-medium) !important;
+  box-shadow: 0 4px 14px rgba(107, 63, 160, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.nf-form-content input[type="button"]:active,
+.nf-form-content input[type="submit"]:active,
+.nf-form-content button:active {
+  transform: translateY(0);
+}
+
+/* ── Fehlermeldungen – Orange statt Rot ── */
+.nf-form-content .nf-error .ninja-forms-field,
+.nf-form-content .nf-field-container.nf-error input,
+.nf-form-content .nf-field-container.nf-error textarea,
+.nf-form-content .nf-field-container.nf-error select {
+  border-color: var(--pz-orange) !important;
+  background-color: #fff6ed !important;
+}
+
+.nf-form-content .nf-error-msg,
+.nf-form-content .nf-error span.nf-error-msg,
+.nf-form-content .ninja-forms-notice,
+.nf-form-content .ninja-forms-notice.nf-error {
+  color: var(--pz-orange) !important;
+  background-color: transparent !important;
+  border-color: var(--pz-orange) !important;
+}
+
+/* ── Erfolgs- / Bestätigungsmeldungen – Mint statt Grün ── */
+.nf-form-content .nf-response-msg,
+.nf-form-content .ninja-forms-notice.nf-info,
+.nf-form-content .ninja-notices .notice-success,
+.nf-response-msg {
+  color: var(--pz-mint) !important;
+  border-color: var(--pz-mint) !important;
+  background-color: #edfbf8 !important;
+}
+
+/* Positive Feld-Validierung ── */
+.nf-form-content .nf-field-container.nf-pass input,
+.nf-form-content .nf-field-container.nf-pass textarea,
+.nf-form-content .nf-field-container.nf-pass select {
+  border-color: var(--pz-mint) !important;
+}
+
+/* ── Progress-Bar (Multi-Step) – Mint ── */
+.nf-form-content .nf-progress-bar .nf-progress {
+  background-color: var(--pz-mint) !important;
+}
+
+/* ── Ninja Forms Datepicker ── */
+.ui-datepicker .ui-state-active,
+.ui-datepicker .ui-state-highlight {
+  background: var(--pz-dark) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+}
+hr.ninja-forms-field {
+	display:none !important;
+}
+/* Ninja Forms – Upload-Fortschrittsbalken */
+
+/* Hintergrund des Balkens (Track) */
+.nf-fu-progress {
+  background-color: #fff !important;
+  border-radius: 4px;
+  overflow: hidden;
+  height: 8px;
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0) !important;
+}
+
+/* Der gefüllte Teil (Fortschritt) */
+.nf-fu-progress-bar {
+  background-color: var(--pz-medium);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+/***** 404-Seite****/
+.error404 .entry-header {
+	background: #fff !important;
+}
+/* Kalender ju-like*/
+
+.fc .fc-multimonth {
+	border: none !important;
+}
+.fc .fc-daygrid-body-balanced .fc-daygrid-day-events {
+  left: 0px;
+  position: relative !important;
+  right: 0px;
+}
+
+/**************************************** FOOTER ************************* FOOTER *******************************/
+.app-flipbox .pp-more-link:hover {
+	border: 1px solid #fff;
+	border-radius: 5px;
+}
+@media screen and (min-width: 768px) {
+	.app-flipbox {
+		width: 300px;
+		height: 300px;
+	}
+}
+@media screen and (max-width: 767px) {
+	.owl-nav .pp-carousel-nav {
+		display:none;
+	}
+	.app-flipbox {
+		width: 100% !important;
+		height: 200px !important;
+	}
+}

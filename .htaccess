@@ -1,0 +1,448 @@
+# BEGIN WP Rocket
+# Use UTF-8 encoding for anything served text/plain or text/html
+AddDefaultCharset UTF-8
+# Force UTF-8 for a number of file formats
+<IfModule mod_mime.c>
+AddCharset UTF-8 .atom .css .js .json .rss .vtt .xml
+</IfModule>
+
+# FileETag None is not enough for every server.
+<IfModule mod_headers.c>
+Header unset ETag
+</IfModule>
+
+# Since we’re sending far-future expires, we don’t need ETags for static content.
+# developer.yahoo.com/performance/rules.html#etags
+FileETag None
+
+<IfModule mod_alias.c>
+<FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml)$">
+<IfModule mod_headers.c>
+Header set X-Powered-By "WP Rocket/3.21.3"
+Header unset Pragma
+Header append Cache-Control "public"
+Header unset Last-Modified
+</IfModule>
+</FilesMatch>
+
+<FilesMatch "\.(css|htc|js|asf|asx|wax|wmv|wmx|avi|bmp|class|divx|doc|docx|eot|exe|gif|gz|gzip|ico|jpg|jpeg|jpe|json|mdb|mid|midi|mov|qt|mp3|m4a|mp4|m4v|mpeg|mpg|mpe|mpp|otf|odb|odc|odf|odg|odp|ods|odt|ogg|pdf|png|pot|pps|ppt|pptx|ra|ram|svg|svgz|swf|tar|tif|tiff|ttf|ttc|wav|wma|wri|xla|xls|xlsx|xlt|xlw|zip)$">
+<IfModule mod_headers.c>
+Header unset Pragma
+Header append Cache-Control "public"
+</IfModule>
+</FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+	AddType image/avif                                  avif
+    AddType image/avif-sequence                         avifs
+</IfModule>
+# Expires headers (for better cache control)
+<IfModule mod_expires.c>
+	ExpiresActive on
+	ExpiresDefault                              "access plus 1 month"
+	# cache.appcache needs re-requests in FF 3.6 (thanks Remy ~Introducing HTML5)
+	ExpiresByType text/cache-manifest           "access plus 0 seconds"
+	# Your document html
+	ExpiresByType text/html                     "access plus 0 seconds"
+	# Data
+	ExpiresByType text/xml                      "access plus 0 seconds"
+	ExpiresByType application/xml               "access plus 0 seconds"
+	ExpiresByType application/json              "access plus 0 seconds"
+	# Feed
+	ExpiresByType application/rss+xml           "access plus 1 hour"
+	ExpiresByType application/atom+xml          "access plus 1 hour"
+	# Favicon (cannot be renamed)
+	ExpiresByType image/x-icon                  "access plus 1 week"
+	# Media: images, video, audio
+	ExpiresByType image/gif                     "access plus 4 months"
+	ExpiresByType image/png                     "access plus 4 months"
+	ExpiresByType image/jpeg                    "access plus 4 months"
+	ExpiresByType image/webp                    "access plus 4 months"
+	ExpiresByType video/ogg                     "access plus 4 months"
+	ExpiresByType audio/ogg                     "access plus 4 months"
+	ExpiresByType video/mp4                     "access plus 4 months"
+	ExpiresByType video/webm                    "access plus 4 months"
+	ExpiresByType image/avif                    "access plus 4 months"
+	ExpiresByType image/avif-sequence           "access plus 4 months"
+	# HTC files  (css3pie)
+	ExpiresByType text/x-component              "access plus 1 month"
+	# Webfonts
+	ExpiresByType font/ttf                      "access plus 4 months"
+	ExpiresByType font/otf                      "access plus 4 months"
+	ExpiresByType font/woff                     "access plus 4 months"
+	ExpiresByType font/woff2                    "access plus 4 months"
+	ExpiresByType image/svg+xml                 "access plus 4 months"
+	ExpiresByType application/vnd.ms-fontobject "access plus 1 month"
+	# CSS and JavaScript
+	ExpiresByType text/css                      "access plus 1 year"
+	ExpiresByType text/javascript               "access plus 1 year"
+	ExpiresByType application/javascript        "access plus 1 year"
+</IfModule>
+# Gzip compression
+<IfModule mod_deflate.c>
+# Active compression
+SetOutputFilter DEFLATE
+# Force deflate for mangled headers
+<IfModule mod_setenvif.c>
+<IfModule mod_headers.c>
+SetEnvIfNoCase ^(Accept-EncodXng|X-cept-Encoding|X{15}|~{15}|-{15})$ ^((gzip|deflate)\s*,?\s*)+|[X~-]{4,13}$ HAVE_Accept-Encoding
+RequestHeader append Accept-Encoding "gzip,deflate" env=HAVE_Accept-Encoding
+# Don’t compress images and other uncompressible content
+SetEnvIfNoCase Request_URI \
+\.(?:gif|jpe?g|png|rar|zip|exe|flv|mov|wma|mp3|avi|swf|mp?g|mp4|webm|webp|pdf)$ no-gzip dont-vary
+</IfModule>
+</IfModule>
+
+# Compress all output labeled with one of the following MIME-types
+<IfModule mod_filter.c>
+AddOutputFilterByType DEFLATE application/atom+xml \
+		                          application/javascript \
+		                          application/json \
+		                          application/rss+xml \
+		                          application/vnd.ms-fontobject \
+		                          application/x-font-ttf \
+		                          application/xhtml+xml \
+		                          application/xml \
+		                          font/opentype \
+		                          image/svg+xml \
+		                          image/x-icon \
+		                          text/css \
+		                          text/javascript \
+		                          text/html \
+		                          text/plain \
+		                          text/x-component \
+		                          text/xml
+</IfModule>
+<IfModule mod_headers.c>
+Header append Vary: Accept-Encoding
+</IfModule>
+</IfModule>
+
+
+# END WP Rocket
+
+# BEGIN IP Whitelist
+# IPs die immer Zugriff erhalten, unabhaengig von allen Blocking-Regeln.
+<IfModule mod_setenvif.c>
+    # Lars Lehmann – Videoserver (Hetzner 91.99.57.23)
+    SetEnvIf REMOTE_ADDR "^91\.99\.57\.23$" IP_WHITELISTED=1
+</IfModule>
+# END IP Whitelist
+
+# BEGIN IP Blocking
+# Geblockte IPs aus Log-Analyse
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+    # 15.229.155.227 – Vulnerability-Scanner (12.05.2026)
+    #                  Systematisches Abklopfen von .env.*, .git/config etc.
+    RewriteCond %{REMOTE_ADDR} ^15\.229\.155\.227$ [OR]
+
+    # 136.144.42.47 – WP-/User-Enumeration und Login-Scan
+    #                 wp-login.php, wp-admin, ?author=1, feed, REST users
+    RewriteCond %{REMOTE_ADDR} ^136\.144\.42\.47$ [OR]
+
+    # 46.101.217.74 – Zugriff auf WooCommerce Customers API
+    RewriteCond %{REMOTE_ADDR} ^46\.101\.217\.74$
+    RewriteCond %{ENV:IP_WHITELISTED} !1
+    RewriteRule .* - [F,L]
+
+</IfModule>
+# END IP Blocking
+
+# BEGIN Protected Paths
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+    # WordPress Media-Upload REST-API: POST nur von eigenen IPs erlaubt
+    # HINWEIS: Eigene Admin-IP (93.130.225.132) anpassen falls sie sich aendert
+    RewriteCond %{REQUEST_METHOD} POST
+    RewriteCond %{REQUEST_URI} ^/wp-json/wp/v2/media [NC]
+    RewriteCond %{REMOTE_ADDR} !^93\.130\.225\.132$
+    RewriteCond %{REMOTE_ADDR} !^85\.13\.153\.142$
+    RewriteRule .* - [F,L]
+
+    # Ninja Forms Upload-Verzeichnis: Direkt-Downloads sperren
+    # Grosse Mediendateien (Videos, Audio) sollen nicht direkt abrufbar sein
+    RewriteCond %{REQUEST_URI} ^/wp-content/uploads/ninja-forms/ [NC]
+    RewriteRule .* - [F,L]
+
+    # Sensible Konfigurationsdateien sperren
+    RewriteRule ^\.git(/.*)?$ - [F,L]
+    RewriteRule ^\.env(\..*)?$ - [F,L]
+    RewriteRule ^\.env\.(local|production|staging|development|test|remote|bak|backup|save|old|sample|example|dev)$ - [F,L]
+
+    # Typische WordPress-Scanner-Ziele sperren
+    RewriteRule ^(?:readme\.html|license\.txt)$ - [F,L,NC]
+
+    RewriteRule ^xmlrpc\.php$ - [F,L,NC]
+
+    # WooCommerce Customers API hart sperren
+    RewriteRule ^wp-json/wc/v3/customers/?$ - [F,L,NC]
+
+    # Author-Enumeration blocken
+    RewriteCond %{QUERY_STRING} (^|&)author=\d+(&|$) [NC]
+    RewriteRule .* - [F,L]
+
+    # REST-User-Enumeration / manipulierte rest_route-Zugriffe blocken
+    RewriteCond %{QUERY_STRING} (^|&)rest_route=/wp/v2/users/?(&|$) [NC,OR]
+    RewriteCond %{QUERY_STRING} (^|&)rest_route=wp/v2/users/?(&|$) [NC,OR]
+    RewriteCond %{QUERY_STRING} (^|&)restroute=/wp/v2/users/?(&|$) [NC,OR]
+    RewriteCond %{QUERY_STRING} (^|&)restroute=wp/v2/users/?(&|$) [NC]
+    RewriteRule .* - [F,L]
+
+</IfModule>
+# END Protected Paths
+
+# BEGIN Sensitive File Blocking
+# Zusaetzlicher Schutz ueber FilesMatch (greift auch ohne mod_rewrite)
+<FilesMatch "(^\.env$|^\.env\..+|^\.git|^readme\.html$|^license\.txt$|^xmlrpc\.php$|wp-config\.php\.bak|\.htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+# END Sensitive File Blocking
+
+# BEGIN Bot Blocking
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+    # Requests ohne User-Agent (z.B. rohe Bots)
+    RewriteCond %{HTTP_USER_AGENT} ^-?$ [OR]
+
+    # SERankingBacklinksBot
+    RewriteCond %{HTTP_USER_AGENT} SERankingBacklinksBot [NC,OR]
+
+    # AliyunSecBot
+    RewriteCond %{HTTP_USER_AGENT} AliyunSecBot [NC,OR]
+
+    # Generischer WebScraperBot
+    RewriteCond %{HTTP_USER_AGENT} WebScraperBot [NC,OR]
+
+    # Barkrowler (babbar.tech)
+    RewriteCond %{HTTP_USER_AGENT} Barkrowler [NC,OR]
+
+    # TikTokSpider / ByteSpider (ByteDance)
+    RewriteCond %{HTTP_USER_AGENT} TikTokSpider [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ByteSpider [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Bytespider [NC,OR]
+
+    # Amzn-SearchBot
+    RewriteCond %{HTTP_USER_AGENT} Amzn-SearchBot [NC,OR]
+
+    # 2ip
+    RewriteCond %{HTTP_USER_AGENT} 2ip\ bot [NC,OR]
+
+    # visionheight.com scan
+    RewriteCond %{HTTP_USER_AGENT} visionheight\.comscan [NC,OR]
+
+    # --- Meta / Facebook ---
+    RewriteCond %{HTTP_USER_AGENT} facebookexternalhit [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} meta-externalfetcher [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Meta-ExternalAgent [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} meta-webindexer [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} meta-externalhit [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Facebot [NC,OR]
+
+    # --- OpenAI / ChatGPT ---
+    RewriteCond %{HTTP_USER_AGENT} GPTBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ChatGPT-User [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} OAI-SearchBot [NC,OR]
+
+    # --- Anthropic / Claude ---
+    RewriteCond %{HTTP_USER_AGENT} ClaudeBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Claude-Web [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} anthropic-ai [NC,OR]
+
+    # --- Google AI ---
+    RewriteCond %{HTTP_USER_AGENT} Google-Extended [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} GoogleOther [NC,OR]
+
+    # --- Microsoft / Bing AI ---
+    RewriteCond %{HTTP_USER_AGENT} BingPreview [NC,OR]
+
+    # --- Perplexity ---
+    RewriteCond %{HTTP_USER_AGENT} PerplexityBot [NC,OR]
+
+    # --- Apple ---
+    RewriteCond %{HTTP_USER_AGENT} Applebot-Extended [NC,OR]
+
+    # --- Common Crawl ---
+    RewriteCond %{HTTP_USER_AGENT} CCBot [NC,OR]
+
+    # --- SEO Bots ---
+    RewriteCond %{HTTP_USER_AGENT} AhrefsBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} SemrushBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} DotBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} MJ12bot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} DataForSeoBot [NC,OR]
+
+    # --- Other AI Crawlers ---
+    RewriteCond %{HTTP_USER_AGENT} YouBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} cohere-ai [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} omgili [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} PetalBot [NC,OR]
+
+    # --- Misc Bad Bots ---
+    RewriteCond %{HTTP_USER_AGENT} YandexBot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Baiduspider [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} ia_archiver [NC,OR]
+
+    # --- Microsoft Bing ---
+    # bingbot: 11.734 Requests am 07.06.2026 (aggressivster Crawler im Log)
+    # Entfernen falls Bing-Indexierung gewuenscht ist
+    RewriteCond %{HTTP_USER_AGENT} bingbot [NC,OR]
+
+    # --- Duck.ai Crawler ---
+    # DuckAssistBot: 8 Requests am 07.06.2026
+    RewriteCond %{HTTP_USER_AGENT} DuckAssistBot [NC,OR]
+
+    # --- AI-Crawler (lyrenth.com) ---
+    # AIWebIndex: 8 Requests am 07.06.2026
+    RewriteCond %{HTTP_USER_AGENT} AIWebIndex [NC,OR]
+
+    # --- Palo Alto Cortex Xpanse Attack Surface Scanner ---
+    # 8 Requests am 07.06.2026
+    RewriteCond %{HTTP_USER_AGENT} "Palo Alto Networks" [NC,OR]
+
+    # --- SeznamBot (tschechische Suchmaschine) ---
+    # 25 Requests am 07.06.2026
+    RewriteCond %{HTTP_USER_AGENT} SeznamBot [NC,OR]
+
+    # --- Go-http-client (Script-Zugriffe ohne echten Browser) ---
+    # 66 Requests am 07.06.2026
+    RewriteCond %{HTTP_USER_AGENT} Go-http-client [NC,OR]
+
+    # --- Diverse Kleincrawler (Log 07.06.2026) ---
+    RewriteCond %{HTTP_USER_AGENT} VelenPublicWebCrawler [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} SumvinUCPCrawler [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} Pandalytics [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} coccocbot [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} semantic-visions [NC]
+
+    RewriteCond %{ENV:IP_WHITELISTED} !1
+    RewriteRule .* - [F,L]
+</IfModule>
+# END Bot Blocking
+# BEGIN WordPress
+# The directives (lines) between "BEGIN WordPress" and "END WordPress" are
+# dynamically generated, and should only be modified via WordPress filters.
+# Any changes to the directives between these markers will be overwritten.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+
+# END WordPress
+
+# BEGIN ShortPixelWebp
+# The directives (lines) between "BEGIN ShortPixelWebp" and "END ShortPixelWebp" are
+# dynamically generated, and should only be modified via WordPress filters.
+# Any changes to the directives between these markers will be overwritten.
+
+           <IfModule mod_rewrite.c>
+           RewriteEngine On
+           ##### Directives for delivering AVIF files, if they exist #####
+           # Does the browser support avif?
+           RewriteCond %{HTTP_ACCEPT} image/avif
+           # AND is the request a JPG, PNG, or WebP? (no GIFs because the animation is sometimes lost in AVIF);
+		   # (also grab the basepath %1 to match in the next rule)
+           RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|webp)$
+           # AND does a .avif image exist?
+           RewriteCond %{DOCUMENT_ROOT}/%1.avif -f
+           # THEN send the avif image and set the env var avif
+           RewriteRule (.+)\.(?:jpe?g|png|webp)$ $1.avif [NC,T=image/avif,E=avif,L]
+
+           # Does the browser support avif?
+           RewriteCond %{HTTP_ACCEPT} image/avif
+           # AND is the request a JPG, PNG, or WebP? (no GIFs because the animation is sometimes lost in AVIF);
+		   # (also grab the basepath %1 to match in the next rule)
+           RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|webp)$
+           # AND does a .jpg.avif image exist?
+           RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.avif -f
+           # THEN send the avif image and set the env var avif
+           RewriteRule ^(.+)$ $1.avif [NC,T=image/avif,E=avif,L]
+
+           </IfModule>
+           <IfModule mod_headers.c>
+           # If REDIRECT_avif env var exists, append Accept to the Vary header
+           Header append Vary Accept env=REDIRECT_avif
+
+           <FilesMatch ".(webp)$">
+               Header set Cache-Control "max-age=31536000, public"
+           </FilesMatch>
+           </IfModule>
+           <IfModule mod_mime.c>
+               AddType image/avif .avif
+           </IfModule>
+                 
+           <IfModule mod_rewrite.c>
+             RewriteEngine On
+             ##### TRY FIRST the file appended with .webp (ex. test.jpg.webp) #####
+             # Is the browser Chrome?
+             RewriteCond %{HTTP_USER_AGENT} Chrome [OR]
+             # OR Is this request from Page Speed
+             RewriteCond %{HTTP_USER_AGENT} "Google Page Speed Insights" [OR]
+             # OR does this browser explicitly support webp
+             RewriteCond %{HTTP_ACCEPT} image/webp
+             # AND NOT MS EDGE 42/17 - doesnt work.
+             RewriteCond %{HTTP_USER_AGENT} !Edge/17
+             # AND is the request a jpg, png, or gif?
+             RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|gif)$
+             # AND does a .ext.webp image exist?
+             RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.webp -f
+             # THEN send the webp image and set the env var webp
+             RewriteRule ^(.+)$ $1.webp [NC,T=image/webp,E=webp,L]
+             ##### IF NOT, try the file with replaced extension (test.webp) #####
+             RewriteCond %{HTTP_USER_AGENT} Chrome [OR]
+             RewriteCond %{HTTP_USER_AGENT} "Google Page Speed Insights" [OR]
+             RewriteCond %{HTTP_ACCEPT} image/webp
+             RewriteCond %{HTTP_USER_AGENT} !Edge/17
+             # AND is the request a jpg, png, or gif? (also grab the basepath %1 to match in the next rule)
+             RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|gif)$
+             # AND does a .webp image exist?
+             RewriteCond %{DOCUMENT_ROOT}/%1.webp -f
+             # THEN send the webp image and set the env var webp
+             RewriteRule (.+)\.(?:jpe?g|png|gif)$ $1.webp [NC,T=image/webp,E=webp,L]
+           </IfModule>
+           <IfModule mod_headers.c>
+             # If REDIRECT_webp env var exists, append Accept to the Vary header
+             Header append Vary Accept env=REDIRECT_webp
+             <FilesMatch ".(avif)$">
+               Header set Cache-Control "max-age=31536000, public"
+             </FilesMatch>
+           </IfModule>
+           <IfModule mod_mime.c>
+             AddType image/webp .webp
+           </IfModule>
+           
+# END ShortPixelWebp
+# BEGIN ShortPixel Adaptive Images
+# The directives (lines) between "BEGIN ShortPixel Adaptive Images" and "END ShortPixel Adaptive Images" are
+# dynamically generated, and should only be modified via WordPress filters.
+# Any changes to the directives between these markers will be overwritten.
+
+# END ShortPixel Adaptive Images
+
+# Wordfence WAF
+<Files ".user.ini">
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order deny,allow
+	Deny from all
+</IfModule>
+</Files>
+
+# END Wordfence WAF
