@@ -167,7 +167,7 @@
 }
 
 .pz-card__tag {
-    font-size:       1rem;
+    font-size:       0.9rem;
     color:           #fff;
     text-decoration: none;
 }
@@ -178,7 +178,7 @@
     color:         #fff;
     background:    #160E29;
     border:        1px solid #160E29;
-    padding:       2px 6px;
+    padding:       1px 5px;
     border-radius: 5px;
     transition:    color .15s;
 }
