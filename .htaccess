@@ -190,13 +190,9 @@ RewriteEngine On
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-    # WordPress Media-Upload REST-API: POST nur von eigenen IPs erlaubt
-    # HINWEIS: Eigene Admin-IP (93.130.225.132) anpassen falls sie sich aendert
-    RewriteCond %{REQUEST_METHOD} POST
-    RewriteCond %{REQUEST_URI} ^/wp-json/wp/v2/media [NC]
-    RewriteCond %{REMOTE_ADDR} !^93\.130\.225\.132$
-    RewriteCond %{REMOTE_ADDR} !^85\.13\.153\.142$
-    RewriteRule .* - [F,L]
+    # Whitelisted IPs: alle Sperren im Block uebergehen
+    RewriteCond %{ENV:IP_WHITELISTED} 1
+    RewriteRule .* - [L]
 
     # Ninja Forms Upload-Verzeichnis: Direkt-Downloads sperren
     # Grosse Mediendateien (Videos, Audio) sollen nicht direkt abrufbar sein
@@ -206,7 +202,6 @@ RewriteEngine On
     # Sensible Konfigurationsdateien sperren
     RewriteRule ^\.git(/.*)?$ - [F,L]
     RewriteRule ^\.env(\..*)?$ - [F,L]
-    RewriteRule ^\.env\.(local|production|staging|development|test|remote|bak|backup|save|old|sample|example|dev)$ - [F,L]
 
     # Typische WordPress-Scanner-Ziele sperren
     RewriteRule ^(?:readme\.html|license\.txt)$ - [F,L,NC]
@@ -232,7 +227,7 @@ RewriteEngine On
 
 # BEGIN Sensitive File Blocking
 # Zusaetzlicher Schutz ueber FilesMatch (greift auch ohne mod_rewrite)
-<FilesMatch "(^\.env$|^\.env\..+|^\.git|^readme\.html$|^license\.txt$|^xmlrpc\.php$|wp-config\.php\.bak|\.htpasswd)$">
+<FilesMatch "(^\.env$|^\.env\..+|^\.git|^readme\.html$|^license\.txt$|^xmlrpc\.php$|wp-config\.php$|wp-config\.php\.bak|\.htpasswd)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -265,7 +260,6 @@ RewriteEngine On
     # TikTokSpider / ByteSpider (ByteDance)
     RewriteCond %{HTTP_USER_AGENT} TikTokSpider [NC,OR]
     RewriteCond %{HTTP_USER_AGENT} ByteSpider [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Bytespider [NC,OR]
 
     # Amzn-SearchBot
     RewriteCond %{HTTP_USER_AGENT} Amzn-SearchBot [NC,OR]
