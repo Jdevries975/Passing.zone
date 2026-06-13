@@ -78,6 +78,18 @@ add_shortcode('portable_hook', function($atts){
 		do_action($atts['hook_name']);
 	return ob_get_clean();
 });
+/* Default sort for pattern admin list: newest first */
+add_action( 'pre_get_posts', 'pz_pattern_admin_default_order' );
+function pz_pattern_admin_default_order( $query ) {
+    global $pagenow;
+    if ( ! is_admin() ) return;
+    if ( $pagenow !== 'edit.php' ) return;
+    if ( ( $_GET['post_type'] ?? '' ) !== 'pattern' ) return;
+    if ( ! empty( $_GET['orderby'] ) ) return;
+    $query->set( 'orderby', 'date' );
+    $query->set( 'order', 'DESC' );
+}
+
 /* Author Archive: Main query includes patterns and Posts*/
 add_action( 'pre_get_posts', 'add_cpt_to_author_archive' );
 function add_cpt_to_author_archive( $query ) {

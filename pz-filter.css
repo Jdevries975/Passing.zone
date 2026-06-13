@@ -188,15 +188,22 @@
 .pz-card__tag--jugglers:hover {
     color:       #fff;
     border:      1px solid #fff;
-    background:  var(--pz-light);
+    background:  var(--pz-superdark);
 }
 
 .pz-card__tag--difficulty.stars i {
-    display:     block;
-    font-style:  normal;
-    line-height: 0;
-    zoom:        0.667;
-    margin-top: 6px;
+    display:          block;
+    font-style:       normal;
+    line-height:      0;
+    margin-top:       6px;
+    transform:        scale(0.667);
+    transform-origin: 0 0;
+}
+@supports (zoom: 1) {
+    .pz-card__tag--difficulty.stars i {
+        transform: none;
+        zoom:      0.667;
+    }
 }
 
 /* ── Hidden cards (Load More) ────────────────────────────────────────────── */
@@ -209,6 +216,7 @@
     position:   relative;
     margin-top: 32px;
     width:      fit-content;
+    margin-left: auto;
 }
 .btn-show-more {
     background:    var(--pz-primary);
@@ -219,6 +227,7 @@
     font-size:     1rem;
     cursor:        pointer;
     transition:    background-color .2s;
+    border-radius: 5px;
 }
 .btn-show-more:hover {
     background: var(--pz-tuerkis);
@@ -229,6 +238,261 @@
     padding:    48px 24px;
     color:      var(--pz-text-muted);
     font-size:  1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PZ FINDER  –  stand-alone filter picker (redirects to /patterns)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pz-finder-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pz-finder-section {
+    padding: 20px 28px;
+}
+
+/* ── Juggler slider ── */
+
+.pz-finder-slider-outer {
+    display:        flex !important;
+    flex-direction: row !important;
+    flex-wrap:      nowrap !important;
+    align-items:    center;
+    gap:            20px;
+}
+
+.pz-finder-slider-viewport {
+    flex:      1;
+    min-width: 0;
+    overflow:  hidden;
+}
+
+.pz-finder-slider-track {
+    display:        flex !important;
+    flex-direction: row !important;
+    flex-wrap:      nowrap !important;
+    gap:            8px;
+    transition:     transform 0.3s ease;
+}
+
+.pz-finder-nav {
+    flex-shrink: 0;
+    background:  transparent;
+    border:      none;
+    color:       #fff;
+    cursor:      pointer;
+    padding:     8px 4px;
+    opacity:     1;
+    transition:  opacity 0.2s;
+    line-height: 0;
+}
+
+.pz-finder-nav--disabled,
+.pz-finder-nav:disabled {
+    opacity: 0.25;
+    cursor:  not-allowed;
+}
+
+/* ── Generic filter button ── */
+
+.pz-finder-btn {
+    display:       flex !important;
+    align-items:   center;
+    gap:           8px;
+    background:    var(--pz-accent);
+    border:        1px solid #fff;
+    border-radius: 8px;
+    color:         #fff;
+    cursor:        pointer;
+    font-size:     1rem;
+    padding:       0 14px;
+    height:        34px;
+    overflow:      hidden;
+    transition:    background 0.2s, border-color 0.2s, color 0.2s;
+    white-space:   nowrap;
+    text-align:    left;
+    line-height:   1.2;
+}
+
+.pz-finder-btn:hover {
+    background:   var(--pz-tuerkis);
+    border-color: #fff;
+}
+
+.pz-finder-btn.is-active {
+    background:   var(--pz-tuerkis);
+    border-color: var(--pz-tuerkis);
+    color:        var(--pz-dark);
+}
+
+.pz-finder-count {
+    font-size:    0.8rem;
+    opacity:      0.6;
+    margin-left:  auto;
+    padding-left: 6px;
+    flex-shrink:  0;
+}
+
+.pz-finder-btn.is-active .pz-finder-count {
+    opacity: 0.5;
+}
+
+/* ── Juggler buttons inside slider ── */
+
+.pz-finder-juggler-btn {
+    flex:            0 0 auto;
+    justify-content: space-between;
+}
+
+/* ── Difficulty 2×2 grid ── */
+
+.pz-finder-diff-grid {
+    display:         flex;
+    flex-wrap:       wrap;
+    gap:             10px;
+    justify-content: center;
+    max-width:       400px;
+    margin:          0 auto;
+}
+
+.pz-finder-diff-btn {
+    flex:            0 0 auto;
+    justify-content: space-between;
+}
+
+.pz-finder-stars i {
+    display:          block;
+    font-style:       normal;
+    line-height:      0;
+    transform:        scale(0.55); /* Firefox: zoom not supported, use transform */
+    transform-origin: 0 0;
+}
+@supports (zoom: 1) {
+    .pz-finder-stars i {
+        transform: none;
+        zoom:      0.55; /* Chrome/Safari: zoom affects layout space, transform doesn't */
+    }
+}
+
+/* ── Accordion sections (Type / Tags) ── */
+
+.pz-finder-acc-toggle {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    width:           100%;
+    background:      transparent;
+    border:          none;
+    color:           #fff;
+    font-size:       1rem;
+    font-weight:     600;
+    cursor:          pointer;
+    padding:         0;
+    text-align:      left;
+    appearance:      none;
+}
+
+.pz-finder-acc-toggle:hover,
+.pz-finder-acc-toggle:active,
+.pz-finder-acc-toggle:focus {
+    background: transparent;
+    outline:    none;
+}
+
+.pz-finder-chevron {
+    flex-shrink: 0;
+    transition:  transform 0.2s ease;
+}
+
+.pz-finder-acc-toggle.is-open .pz-finder-chevron {
+    transform: rotate(180deg);
+}
+
+.pz-finder-acc-body {
+    margin-top: 14px;
+    display:    flex;
+    flex-wrap:  wrap;
+    gap:        8px;
+}
+
+.pz-finder-acc-body--tree {
+    flex-direction: column;
+    flex-wrap:      nowrap;
+    gap:            4px;
+}
+
+.pz-finder-term-btn--child {
+    margin-left: 20px;
+    font-size:   0.875rem;
+    padding:     7px 12px;
+}
+
+/* ── Footer bar ── */
+
+.pz-finder-footer {
+    display:    flex;
+    gap:        20px;
+    padding:    20px;
+    background: var(--pz-dark);
+    border-radius: 20px;
+    margin-top: 15px;
+}
+
+.pz-finder-reset {
+    flex:          0 0 auto;
+    background:     var(--pz-flieder);
+    border:        1px solid var(--pz-dark);
+    color:         var(--pz-dark);
+    border-radius: 6px;
+    padding:       6px 20px;
+    font-size:     1rem;
+    cursor:        pointer;
+    transition:    background 0.2s;
+    white-space:   nowrap;
+}
+
+.pz-finder-reset:hover {
+    background: var(--pz-hellflieder);
+    color: var(--pz-dark);
+    border:        1px solid var(--pz-dark);
+}
+
+.pz-finder-find {
+    flex:          1;
+    background:    var(--pz-medium);
+    border:        1px solid #fff;
+    color:         #fff;
+    border-radius: 6px;
+    padding:       6px 20px;
+    font-size:     1rem;
+    font-weight:   600;
+    cursor:        pointer;
+    transition:    background 0.2s;
+}
+
+.pz-finder-find:hover {
+    background: var(--pz-tuerkis);
+}
+
+/* ── Finder mobile ── */
+
+@media screen and (max-width: 600px) {
+    .pz-finder-section {
+        padding: 14px 16px;
+    }
+    .pz-finder-footer {
+        padding:    12px 16px;
+        flex-wrap:  wrap;
+        background: var(--pz-dark);
+    }
+    .pz-finder-reset {
+        flex: 1 1 100%;
+    }
+    .pz-finder-find {
+        flex: 1 1 100%;
+    }
 }
 
 /* ── Mobile ──────────────────────────────────────────────────────────────── */

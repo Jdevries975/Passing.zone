@@ -9,6 +9,33 @@
 if (!defined('ABSPATH')) exit;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 0. SHARED HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the pattern-type taxonomy as a parent→children tree.
+ * Within each child group, terms ending in "-about" sort first, then alpha.
+ */
+function pz_get_type_tree(): array {
+    $flat = get_terms( [ 'taxonomy' => 'pattern-type', 'hide_empty' => false, 'orderby' => 'name' ] );
+    $tree = [];
+    foreach ( (array) $flat as $term ) {
+        $tree[ $term->parent ][] = $term;
+    }
+    foreach ( $tree as $parent_id => &$children ) {
+        if ( $parent_id === 0 ) continue;
+        usort( $children, function ( $a, $b ) {
+            $a_first = str_contains( $a->slug, 'about' ) ? 0 : 1;
+            $b_first = str_contains( $b->slug, 'about' ) ? 0 : 1;
+            return $a_first !== $b_first ? $a_first - $b_first : strnatcmp( $a->name, $b->name );
+        } );
+    }
+    unset( $children );
+    return $tree;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1. SHORTCODE
 //    Usage in Beaver Builder: HTML module → [pz_filter]
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,10 +43,17 @@ if (!defined('ABSPATH')) exit;
 function pz_filter_shortcode() {
 
     // Load all available terms for the dropdowns
-    $jugglers   = get_terms(['taxonomy' => 'number-of-jugglers', 'hide_empty' => true, 'orderby' => 'name']);
-    $difficulty = get_terms(['taxonomy' => 'pattern-difficulty', 'hide_empty' => true, 'orderby' => 'name']);
-    $types      = get_terms(['taxonomy' => 'pattern-type',       'hide_empty' => true, 'orderby' => 'name']);
-    $tags       = get_terms(['taxonomy' => 'pattern-tag',        'hide_empty' => true, 'orderby' => 'name']);
+    $jugglers   = get_terms(['taxonomy' => 'number-of-jugglers', 'hide_empty' => true,  'orderby' => 'name']);
+    $difficulty = get_terms(['taxonomy' => 'pattern-difficulty', 'hide_empty' => true,  'orderby' => 'name']);
+    $tags       = get_terms(['taxonomy' => 'pattern-tag',        'hide_empty' => true,  'orderby' => 'name']);
+
+    $types_tree = pz_get_type_tree();
+
+    // Pre-fill filters from URL params (redirected from [pz_finder])
+    $sel_jugglers   = isset($_GET['jugglers'])   ? sanitize_text_field(wp_unslash($_GET['jugglers']))   : '';
+    $sel_difficulty = isset($_GET['difficulty']) ? sanitize_text_field(wp_unslash($_GET['difficulty'])) : '';
+    $sel_type       = isset($_GET['type'])       ? sanitize_text_field(wp_unslash($_GET['type']))       : '';
+    $sel_tag        = isset($_GET['tag'])        ? sanitize_text_field(wp_unslash($_GET['tag']))        : '';
 
     ob_start(); ?>
 
@@ -34,7 +68,7 @@ function pz_filter_shortcode() {
                 <select id="pz-filter-jugglers">
                     <option value="">All</option>
                     <?php foreach ((array) $jugglers as $term) : ?>
-                        <option value="<?= esc_attr($term->slug) ?>"><?= esc_html($term->name) ?></option>
+                        <option value="<?= esc_attr($term->slug) ?>" <?= selected($sel_jugglers, $term->slug, false) ?>><?= esc_html($term->name) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -44,7 +78,7 @@ function pz_filter_shortcode() {
                 <select id="pz-filter-difficulty">
                     <option value="">All</option>
                     <?php foreach ((array) $difficulty as $term) : ?>
-                        <option value="<?= esc_attr($term->slug) ?>"><?= esc_html($term->name) ?></option>
+                        <option value="<?= esc_attr($term->slug) ?>" <?= selected($sel_difficulty, $term->slug, false) ?>><?= esc_html(preg_replace('/^\d+\s*/', '', $term->name)) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -53,8 +87,11 @@ function pz_filter_shortcode() {
                 <label for="pz-filter-type">Type</label>
                 <select id="pz-filter-type">
                     <option value="">All</option>
-                    <?php foreach ((array) $types as $term) : ?>
-                        <option value="<?= esc_attr($term->slug) ?>"><?= esc_html($term->name) ?></option>
+                    <?php foreach ($types_tree[0] ?? [] as $parent) : ?>
+                        <option value="<?= esc_attr($parent->slug) ?>" <?= selected($sel_type, $parent->slug, false) ?>><?= esc_html($parent->name) ?></option>
+                        <?php foreach ($types_tree[$parent->term_id] ?? [] as $child) : ?>
+                            <option value="<?= esc_attr($child->slug) ?>" <?= selected($sel_type, $child->slug, false) ?>>&nbsp;&nbsp;— <?= esc_html($child->name) ?></option>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -64,7 +101,7 @@ function pz_filter_shortcode() {
                 <select id="pz-filter-tag">
                     <option value="">All</option>
                     <?php foreach ((array) $tags as $term) : ?>
-                        <option value="<?= esc_attr($term->slug) ?>"><?= esc_html($term->name) ?></option>
+                        <option value="<?= esc_attr($term->slug) ?>" <?= selected($sel_tag, $term->slug, false) ?>><?= esc_html($term->name) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -102,9 +139,9 @@ function pz_filter_shortcode() {
         <!-- Result counter -->
         <p class="pz-results-count"></p>
 
-        <!-- Card grid (initially populated) -->
+        <!-- Card grid (initially populated, pre-filtered if URL params present) -->
         <div id="pz-results" class="pz-grid">
-            <?= pz_render_cards() ?>
+            <?= pz_render_cards('', $sel_jugglers, $sel_difficulty, $sel_type, $sel_tag) ?>
         </div>
 
         <!-- No results message -->
@@ -271,7 +308,7 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
             // Strip leading number from slug (e.g. "4-expert" → "expert") to match CSS classes
             $class = preg_replace( '/^\d+-/', '', sanitize_html_class( $term->slug ) );
             $output .= '<span class="pz-card__tag pz-card__tag--difficulty stars">'
-                . '<i class="' . esc_attr( $class ) . '" title="' . esc_attr( $term->name ) . '"></i>'
+                . '<i class="' . esc_attr( $class ) . '" title="' . esc_attr( preg_replace( '/^\d+\s*/', '', $term->name ) ) . '"></i>'
                 . '</span>';
         }
         foreach ( $juggler_terms as $term ) {
@@ -311,7 +348,124 @@ function pz_render_cards( string $name = '', string $jugglers = '', string $diff
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. ARCHIVE SHORTCODE
+// 3. FINDER SHORTCODE
+//    Stand-alone filter picker that redirects to /patterns with URL params.
+//    Usage: [pz_finder] or [pz_finder target="/patterns"]
+// ─────────────────────────────────────────────────────────────────────────────
+
+function pz_finder_shortcode( $atts ): string {
+    $atts = shortcode_atts( [ 'target' => '/patterns' ], $atts, 'pz_finder' );
+
+    $jugglers   = get_terms( [ 'taxonomy' => 'number-of-jugglers', 'hide_empty' => true,  'orderby' => 'name' ] );
+    $difficulty = get_terms( [ 'taxonomy' => 'pattern-difficulty',  'hide_empty' => true,  'orderby' => 'name' ] );
+    $tags       = get_terms( [ 'taxonomy' => 'pattern-tag',         'hide_empty' => true,  'orderby' => 'name' ] );
+
+    $types_tree = pz_get_type_tree();
+
+    ob_start(); ?>
+
+    <div class="pz-finder-wrap"
+         data-target="<?= esc_attr( $atts['target'] ) ?>"
+         data-ajaxurl="<?= esc_url( admin_url('admin-ajax.php') ) ?>"
+         data-nonce="<?= esc_attr( wp_create_nonce('pz_filter_nonce') ) ?>">
+
+        <!-- ── Juggler slider ── -->
+        <div class="pz-finder-section">
+            <div class="pz-finder-slider-outer">
+                <button class="pz-finder-nav pz-finder-prev" type="button" aria-label="Previous">
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                        <path d="M7 1L1 7L7 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="pz-finder-slider-viewport">
+                    <div class="pz-finder-slider-track">
+                        <?php foreach ( (array) $jugglers as $term ) : ?>
+                        <button class="pz-finder-btn pz-finder-juggler-btn" type="button"
+                                data-filter="jugglers" data-value="<?= esc_attr( $term->slug ) ?>">
+                            <?= esc_html( $term->name ) ?> <span class="pz-finder-count"><?= esc_html( $term->count ) ?></span>
+                        </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <button class="pz-finder-nav pz-finder-next" type="button" aria-label="Next">
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                        <path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Difficulty buttons (SVG stars) ── -->
+        <div class="pz-finder-section pz-finder-diff-grid">
+            <?php foreach ( (array) $difficulty as $term ) :
+                $class = preg_replace( '/^\d+-/', '', sanitize_html_class( $term->slug ) );
+            ?>
+            <button class="pz-finder-btn pz-finder-diff-btn" type="button"
+                    data-filter="difficulty" data-value="<?= esc_attr( $term->slug ) ?>">
+                <span class="pz-finder-stars stars"><i class="<?= esc_attr( $class ) ?>" title="<?= esc_attr( preg_replace( '/^\d+\s*/', '', $term->name ) ) ?>"></i></span>
+                <span class="pz-finder-count"><?= esc_html( $term->count ) ?></span>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- ── Type accordion ── -->
+        <div class="pz-finder-section pz-finder-acc">
+            <button class="pz-finder-acc-toggle" type="button" data-body="pz-finder-type-body" aria-expanded="false">
+                Type
+                <svg class="pz-finder-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+                    <path d="M1 1L6 7L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="pz-finder-acc-body pz-finder-acc-body--tree" id="pz-finder-type-body" style="display:none;">
+                <?php foreach ( $types_tree[0] ?? [] as $parent ) : ?>
+                <button class="pz-finder-btn pz-finder-term-btn" type="button"
+                        data-filter="type" data-value="<?= esc_attr( $parent->slug ) ?>">
+                    <?= esc_html( $parent->name ) ?><span class="pz-finder-count"><?= esc_html( $parent->count ) ?></span>
+                </button>
+                <?php foreach ( $types_tree[ $parent->term_id ] ?? [] as $child ) : ?>
+                <button class="pz-finder-btn pz-finder-term-btn pz-finder-term-btn--child" type="button"
+                        data-filter="type" data-value="<?= esc_attr( $child->slug ) ?>">
+                    <?= esc_html( $child->name ) ?><span class="pz-finder-count"><?= esc_html( $child->count ) ?></span>
+                </button>
+                <?php endforeach; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- ── Tags accordion ── -->
+        <div class="pz-finder-section pz-finder-acc">
+            <button class="pz-finder-acc-toggle" type="button" data-body="pz-finder-tags-body" aria-expanded="false">
+                Tags
+                <svg class="pz-finder-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+                    <path d="M1 1L6 7L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="pz-finder-acc-body" id="pz-finder-tags-body" style="display:none;">
+                <?php foreach ( (array) $tags as $term ) : ?>
+                <button class="pz-finder-btn pz-finder-term-btn" type="button"
+                        data-filter="tag" data-value="<?= esc_attr( $term->slug ) ?>">
+                    <?= esc_html( $term->name ) ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- ── Footer: Reset + Find ── -->
+        <div class="pz-finder-footer">
+            <button class="pz-finder-reset" type="button">Reset Filters</button>
+            <button class="pz-finder-find" type="button">Find Patterns</button>
+        </div>
+
+    </div><!-- .pz-finder-wrap -->
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'pz_finder', 'pz_finder_shortcode' );
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. ARCHIVE SHORTCODE
 //    Simplified version for taxonomy archive pages: search + sort only.
 //    Usage in Beaver Builder Themer layout for pattern taxonomies: [pz_archive]
 // ─────────────────────────────────────────────────────────────────────────────
@@ -429,7 +583,9 @@ function pz_shortcode_is_needed(): bool {
 
     // Regular post/page with the shortcode directly in its content
     if ( is_a( $post, 'WP_Post' ) &&
-         ( has_shortcode( $post->post_content, 'pz_filter' ) || has_shortcode( $post->post_content, 'pz_archive' ) ) ) {
+         ( has_shortcode( $post->post_content, 'pz_filter' )  ||
+           has_shortcode( $post->post_content, 'pz_archive' ) ||
+           has_shortcode( $post->post_content, 'pz_finder' ) ) ) {
         return true;
     }
 
@@ -450,7 +606,7 @@ function pz_shortcode_is_needed(): bool {
     foreach ( $layout_ids as $id ) {
         $bb_data = get_post_meta( $id, '_fl_builder_data', true );
         $serialized = maybe_serialize( $bb_data );
-        if ( $bb_data && ( str_contains( $serialized, 'pz_filter' ) || str_contains( $serialized, 'pz_archive' ) ) ) {
+        if ( $bb_data && ( str_contains( $serialized, 'pz_filter' ) || str_contains( $serialized, 'pz_archive' ) || str_contains( $serialized, 'pz_finder' ) ) ) {
             set_transient( 'pz_filter_in_themer_layout', 1, DAY_IN_SECONDS );
             return true;
         }
@@ -477,14 +633,14 @@ function pz_enqueue_assets(): void {
         'pz-filter-style',
         $base . 'pz-filter.css',
         [],
-        '1.4'
+        '1.5'
     );
 
     wp_enqueue_script(
         'pz-filter-script',
         $base . 'pz-filter.js',
         ['jquery'],
-        '1.3',
+        '1.4',
         true
     );
 
@@ -496,5 +652,13 @@ function pz_enqueue_assets(): void {
             'results' => 'patterns found',
         ],
     ] );
+
+    wp_enqueue_script(
+        'pz-finder-script',
+        $base . 'pz-finder.js',
+        ['jquery'],
+        '1.1',
+        true
+    );
 }
 add_action( 'wp_enqueue_scripts', 'pz_enqueue_assets' );
