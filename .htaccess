@@ -15,10 +15,28 @@ Header unset ETag
 # developer.yahoo.com/performance/rules.html#etags
 FileETag None
 
+# Send CORS headers if browsers request them; enabled by default for images.
+<IfModule mod_setenvif.c>
+<IfModule mod_headers.c>
+# mod_headers, y u no match by Content-Type?!
+<FilesMatch "\.(avifs?|cur|gif|png|jpe?g|svgz?|ico|webp)$">
+SetEnvIf Origin ":" IS_CORS
+Header set Access-Control-Allow-Origin "*" env=IS_CORS
+</FilesMatch>
+</IfModule>
+</IfModule>
+
+# Allow access to web fonts from all domains.
+<FilesMatch "\.(eot|otf|tt[cf]|woff2?)$">
+<IfModule mod_headers.c>
+Header set Access-Control-Allow-Origin "*"
+</IfModule>
+</FilesMatch>
+
 <IfModule mod_alias.c>
 <FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml)$">
 <IfModule mod_headers.c>
-Header set X-Powered-By "WP Rocket/3.21.3"
+Header set X-Powered-By "WP Rocket/3.22"
 Header unset Pragma
 Header append Cache-Control "public"
 Header unset Last-Modified
@@ -144,7 +162,24 @@ RewriteEngine On
     RewriteCond %{REMOTE_ADDR} ^136\.144\.42\.47$ [OR]
 
     # 46.101.217.74 – Zugriff auf WooCommerce Customers API
-    RewriteCond %{REMOTE_ADDR} ^46\.101\.217\.74$
+    RewriteCond %{REMOTE_ADDR} ^46\.101\.217\.74$ [OR]
+
+    # Vietnam – Koordiniertes Bot-Netzwerk (VNPT / Viettel / FPT)
+    # Log-Analyse 12.06.2026: ~18 IPs in 10 Sekunden, gefälschte Chrome-UAs (v99–107),
+    # identische 404-URLs von mehreren IPs gleichzeitig → eindeutig distributed scraping.
+    # Ranges: VNPT 14.174.x, 14.190-191.x; Viettel 14.226-227.x, 14.254.x, 113.168.x, 182.8.x;
+    #         FPT 14.243.x, 14.245.x; VNPT/Viettel 113.180-187.x, 123.16-19.x, 123.24.x
+    RewriteCond %{REMOTE_ADDR} ^14\.174\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^14\.19[01]\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^14\.22[67]\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^14\.243\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^14\.245\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^14\.254\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^113\.168\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^113\.18[0-7]\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^123\.1[6-9]\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^123\.24\. [OR]
+    RewriteCond %{REMOTE_ADDR} ^182\.8\.
     RewriteCond %{ENV:IP_WHITELISTED} !1
     RewriteRule .* - [F,L]
 
