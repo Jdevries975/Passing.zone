@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Juggler terms are bare numbers ("3", "4" …) so the regex won't match them.
 function modifyDifficultyDisplay() {
     document.querySelectorAll('.pz-difficulty-wrapper').forEach(wrapper => {
+        if (wrapper.dataset.pzDone) return;
         const levelText = wrapper.getElementsByTagName("a")[0];
         if (!levelText) return;
 
@@ -37,15 +38,25 @@ function modifyDifficultyDisplay() {
         levelText.appendChild(lineBreak);
         levelText.appendChild(span);
         wrapper.style.visibility = "visible";
+        wrapper.dataset.pzDone = '1';
     });
 
     document.querySelectorAll('a.pp-post-meta-term').forEach(link => {
+        if (link.dataset.pzDone) return;
         if (!link.href.includes('pattern-difficulty')) return;
-        link.textContent = link.textContent.replace(/^\d+\s+/, '').trim();
+        link.textContent = link.textContent.replace(/^\d+\s*/, '').trim();
+        link.dataset.pzDone = '1';
     });
 }
 
 document.addEventListener("DOMContentLoaded", modifyDifficultyDisplay);
+window.addEventListener("load", modifyDifficultyDisplay);
+
+// Catch elements injected after page load (lazy grids, AJAX)
+if (window.MutationObserver) {
+    new MutationObserver(modifyDifficultyDisplay)
+        .observe(document.body, { childList: true, subtree: true });
+}
 
 
 const VISIBLE_ITEMS = 3;

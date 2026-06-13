@@ -184,3 +184,9 @@ add_action( 'wp_enqueue_scripts', function() {
     );
 }, 1 ); // Priority 1 = runs very early
 
+/* 2026-06-13 jdev Weißen Balken oben in Firefox entfernen wenn nicht eingeloggt */
+add_action( 'wp_head', function() {
+    if ( ! is_user_logged_in() ) {
+        echo '<style>html,body{margin-top:0!important;padding-top:0!important}</style>';
+    }
+}, 99 );

@@ -443,6 +443,10 @@ body, .quicksand {
 	font-size: 0.7rem;
 	color: #7F64A5;
 }
+/* Discord-Icon im Footer rechtsbündig */
+.discord-rechts {
+	text-align: right;
+}
 
 
 /**************************************************** Pattern Archives ************************************/

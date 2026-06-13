@@ -362,7 +362,52 @@ function pz_finder_shortcode( $atts ): string {
 
     $types_tree = pz_get_type_tree();
 
-    ob_start(); ?>
+    static $finder_styles_printed = false;
+
+    ob_start();
+
+    if ( ! $finder_styles_printed ) :
+        $finder_styles_printed = true; ?>
+<style id="pz-finder-inline">
+:root{--pz-primary:#33225D;--pz-accent:#472779;--pz-superdark:#160E29;--pz-dark:#33225D;--pz-medium:#472779;--pz-light:#552F8C;--pz-flieder:#9682b4;--pz-mittelflieder:#ddd6ea;--pz-hellflieder:#eeebf4;--pz-lightgrey:#DADADA;--pz-tuerkis:#00b3ff;--pz-orange:#f9a500;--pz-mint:#cbf7d4}
+.pz-finder-wrap{width:100%;border-radius:12px;overflow:hidden;box-sizing:border-box}
+.pz-finder-section{padding:16px 16px;box-sizing:border-box}
+.pz-finder-wrap .pz-finder-slider-outer{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;gap:12px}
+.pz-finder-wrap .pz-finder-slider-viewport{flex:1;min-width:0;overflow:hidden;position:relative}
+.pz-finder-wrap .pz-finder-slider-track{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:8px;transition:transform 0.3s ease}
+.pz-finder-nav{flex-shrink:0;background:transparent;border:none;color:#fff;cursor:pointer;padding:8px 4px;opacity:1;transition:opacity 0.2s;line-height:0}
+.pz-finder-nav--disabled,.pz-finder-nav:disabled{opacity:0.25;cursor:not-allowed}
+.pz-finder-btn{display:flex!important;align-items:center;gap:6px;background:var(--pz-accent);border:1px solid #fff;border-radius:8px;color:#fff;cursor:pointer;font-size:1rem;padding:0 10px;height:34px;overflow:hidden;transition:background 0.2s,border-color 0.2s,color 0.2s;white-space:nowrap;text-align:left;line-height:1.2;box-sizing:border-box}
+.pz-finder-btn:hover{background:var(--pz-tuerkis);border-color:#fff}
+.pz-finder-btn.is-active{background:var(--pz-tuerkis);border-color:var(--pz-tuerkis);color:var(--pz-dark)}
+.pz-finder-count{font-size:0.8rem;opacity:0.6;margin-left:auto;padding-left:4px;flex-shrink:0}
+.pz-finder-btn.is-active .pz-finder-count{opacity:0.5}
+.pz-finder-juggler-btn{flex:0 0 auto;justify-content:space-between}
+.pz-finder-diff-grid{display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px;justify-content:center;width:100%;box-sizing:border-box}
+.pz-finder-diff-btn{flex:0 0 calc(50% - 4px)!important;justify-content:space-between;box-sizing:border-box}
+.pz-finder-stars{display:inline-flex;align-items:center;max-width:70px;overflow:hidden;flex-shrink:0}
+.pz-finder-stars i{display:block;font-style:normal;line-height:0;transform:scale(0.55);transform-origin:0 0}
+@supports (zoom:1){.pz-finder-stars{max-width:unset;overflow:visible}.pz-finder-stars i{transform:none;zoom:0.55}}
+@supports not (zoom:1){.pz-finder-footer{background:transparent}}
+.pz-finder-acc-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;padding:0;text-align:left;appearance:none}
+.pz-finder-acc-toggle:hover,.pz-finder-acc-toggle:active,.pz-finder-acc-toggle:focus{background:transparent;outline:none}
+.pz-finder-chevron{flex-shrink:0;transition:transform 0.2s ease}
+.pz-finder-acc-toggle.is-open .pz-finder-chevron{transform:rotate(180deg)}
+.pz-finder-acc-body{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+.pz-finder-acc-body--tree{flex-direction:column;flex-wrap:nowrap;gap:4px}
+.pz-finder-term-btn--child{margin-left:20px;font-size:0.875rem;padding:7px 10px}
+.pz-finder-footer{display:flex;gap:12px;padding:14px 16px;background:var(--pz-dark);border-radius:16px;margin-top:12px;box-sizing:border-box}
+.pz-finder-reset{flex:0 0 auto;background:var(--pz-flieder);border:1px solid var(--pz-dark);color:var(--pz-dark);border-radius:6px;padding:6px 14px;font-size:1rem;cursor:pointer;transition:background 0.2s;white-space:nowrap}
+.pz-finder-reset:hover{background:var(--pz-hellflieder);color:var(--pz-dark);border:1px solid var(--pz-dark)}
+.pz-finder-find{flex:1;background:var(--pz-medium);border:1px solid #fff;color:#fff;border-radius:6px;padding:6px 14px;font-size:1rem;font-weight:600;cursor:pointer;transition:background 0.2s}
+.pz-finder-find:hover{background:var(--pz-tuerkis)}
+@media screen and (max-width:600px){
+.pz-finder-section{padding:10px 10px}
+.pz-finder-footer{padding:10px 12px;flex-wrap:wrap}
+.pz-finder-reset{flex:1 1 100%}
+.pz-finder-find{flex:1 1 100%}}
+</style>
+<?php endif; ?>
 
     <div class="pz-finder-wrap"
          data-target="<?= esc_attr( $atts['target'] ) ?>"
@@ -371,14 +416,14 @@ function pz_finder_shortcode( $atts ): string {
 
         <!-- ── Juggler slider ── -->
         <div class="pz-finder-section">
-            <div class="pz-finder-slider-outer">
+            <div class="pz-finder-slider-outer" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:20px;">
                 <button class="pz-finder-nav pz-finder-prev" type="button" aria-label="Previous">
                     <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
                         <path d="M7 1L1 7L7 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
-                <div class="pz-finder-slider-viewport">
-                    <div class="pz-finder-slider-track">
+                <div class="pz-finder-slider-viewport" style="flex:1;min-width:0;overflow:hidden;position:relative;">
+                    <div class="pz-finder-slider-track" style="display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;transition:transform 0.3s ease;">
                         <?php foreach ( (array) $jugglers as $term ) : ?>
                         <button class="pz-finder-btn pz-finder-juggler-btn" type="button"
                                 data-filter="jugglers" data-value="<?= esc_attr( $term->slug ) ?>">
@@ -396,11 +441,12 @@ function pz_finder_shortcode( $atts ): string {
         </div>
 
         <!-- ── Difficulty buttons (SVG stars) ── -->
-        <div class="pz-finder-section pz-finder-diff-grid">
+        <div class="pz-finder-section pz-finder-diff-grid" style="display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:8px;justify-content:center;width:100%;box-sizing:border-box;">
             <?php foreach ( (array) $difficulty as $term ) :
                 $class = preg_replace( '/^\d+-/', '', sanitize_html_class( $term->slug ) );
             ?>
             <button class="pz-finder-btn pz-finder-diff-btn" type="button"
+                    style="flex:0 0 auto;justify-content:space-between;"
                     data-filter="difficulty" data-value="<?= esc_attr( $term->slug ) ?>">
                 <span class="pz-finder-stars stars"><i class="<?= esc_attr( $class ) ?>" title="<?= esc_attr( preg_replace( '/^\d+\s*/', '', $term->name ) ) ?>"></i></span>
                 <span class="pz-finder-count"><?= esc_html( $term->count ) ?></span>
@@ -633,7 +679,7 @@ function pz_enqueue_assets(): void {
         'pz-filter-style',
         $base . 'pz-filter.css',
         [],
-        '1.5'
+        '1.6'
     );
 
     wp_enqueue_script(
