@@ -788,3 +788,48 @@ hr.ninja-forms-field {
 		height: 200px !important;
 	}
 }
+
+/**************************************** pz-monkey-stats shortcode *******/
+.pz-monkey-stats__stars {
+	display: inline-flex;
+	align-items: center;
+	max-width: 70px;
+	overflow: hidden;
+	vertical-align: middle;
+}
+.pz-monkey-stats__stars i {
+	display: block;
+	font-style: normal;
+	line-height: 0;
+	transform: scale(0.55);
+	transform-origin: 0 0;
+}
+@supports (zoom: 1) {
+	.pz-monkey-stats__stars {
+		max-width: unset;
+		overflow: visible;
+	}
+	.pz-monkey-stats__stars i {
+		transform: none;
+		zoom: 0.55;
+	}
+}
+@media screen and (max-width: 767px) {
+	.pz-monkey-stats__stars {
+		display: none;
+	}
+}
+.tags-center {
+	display: flex;
+	align-items: center;
+	align-self: center;
+	justify-content: center;
+}
+.tags-center > * {
+	text-align: center;
+	width: 100%;
+}
+.tags-center a {
+	display: block;
+	text-align: center;
+}

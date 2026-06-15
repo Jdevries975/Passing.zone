@@ -184,6 +184,131 @@ add_action( 'wp_enqueue_scripts', function() {
     );
 }, 1 ); // Priority 1 = runs very early
 
+/* 2026-06-14 jdev Monkey stats shortcode for Beaver Themer author archives.
+   Usage: [pz_monkey_stats] */
+function pz_monkey_stats_shortcode(): string {
+    $user = get_queried_object();
+
+    if ( ! ( $user instanceof WP_User ) ) {
+        return '';
+    }
+
+    $user_id = $user->ID;
+
+    // ACF User fields store IDs either as a plain integer (single value) or as
+    // a serialized PHP array of integers. The three clauses cover both formats.
+    $patterns = new WP_Query( [
+        'post_type'      => 'pattern',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'no_found_rows'  => true,
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+        'meta_query'     => [
+            'relation' => 'OR',
+            [
+                'key'     => 'video_monkeys',
+                'value'   => $user_id,
+                'compare' => '=',
+                'type'    => 'NUMERIC',
+            ],
+            [
+                'key'     => 'video_monkeys',
+                'value'   => ';i:' . $user_id . ';',
+                'compare' => 'LIKE',
+            ],
+            [
+                'key'     => 'video_monkeys',
+                'value'   => ':"' . $user_id . '"',
+                'compare' => 'LIKE',
+            ],
+        ],
+    ] );
+
+    if ( ! $patterns->have_posts() ) {
+        return '';
+    }
+
+    $difficulty_counts = [];
+    $posts_list        = [];
+
+    while ( $patterns->have_posts() ) {
+        $patterns->the_post();
+        $id = get_the_ID();
+
+        $diff_terms = get_the_terms( $id, 'pattern-difficulty' );
+        $diff_term  = ( $diff_terms && ! is_wp_error( $diff_terms ) ) ? $diff_terms[0] : null;
+
+        if ( $diff_term ) {
+            $difficulty_counts[ $diff_term->slug ] = ( $difficulty_counts[ $diff_term->slug ] ?? 0 ) + 1;
+        }
+
+        $posts_list[] = [
+            'title'     => get_the_title(),
+            'url'       => get_permalink(),
+            'diff_term' => $diff_term,
+        ];
+    }
+    wp_reset_postdata();
+
+    // Order difficulty counts by taxonomy term order (numeric slug prefix).
+    $all_diff_terms = get_terms( [ 'taxonomy' => 'pattern-difficulty', 'hide_empty' => false, 'orderby' => 'name' ] );
+    $ordered_counts = [];
+    foreach ( (array) $all_diff_terms as $term ) {
+        if ( isset( $difficulty_counts[ $term->slug ] ) ) {
+            $ordered_counts[] = [
+                'name'  => preg_replace( '/^\d+\s*/', '', $term->name ),
+                'slug'  => $term->slug,
+                'count' => $difficulty_counts[ $term->slug ],
+            ];
+        }
+    }
+
+    $total = count( $posts_list );
+
+    ob_start(); ?>
+    <div class="pz-monkey-stats">
+
+        <p class="pz-monkey-stats__total">
+            <strong><?= esc_html( $total ) ?></strong> pattern<?= $total !== 1 ? 's' : '' ?>
+        </p>
+
+        <?php if ( ! empty( $ordered_counts ) ) : ?>
+        <ul class="pz-monkey-stats__difficulties">
+            <?php foreach ( $ordered_counts as $d ) : ?>
+            <li class="pz-monkey-stats__diff-item">
+                <span class="pz-monkey-stats__diff-label"><?= esc_html( $d['name'] ) ?></span>
+                <span class="pz-monkey-stats__diff-count"><?= esc_html( $d['count'] ) ?></span>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+
+        <details class="pz-monkey-stats__accordion">
+            <summary class="pz-monkey-stats__accordion-toggle">
+                <h3 class="pz-monkey-stats__accordion-heading">All pattern videos with <?= esc_html( $user->display_name ) ?></h3>
+            </summary>
+            <ul class="pz-monkey-stats__list">
+                <?php foreach ( $posts_list as $p ) : ?>
+                <li class="pz-monkey-stats__item">
+                    <a href="<?= esc_url( $p['url'] ) ?>"><?= esc_html( $p['title'] ) ?></a>
+                    <?php if ( $p['diff_term'] ) :
+                        $class = preg_replace( '/^\d+-/', '', sanitize_html_class( $p['diff_term']->slug ) );
+                        $label = preg_replace( '/^\d+\s*/', '', $p['diff_term']->name );
+                    ?>
+                    <span class="stars pz-monkey-stats__stars"><i class="<?= esc_attr( $class ) ?>" title="<?= esc_attr( $label ) ?>"></i></span>
+                    <?php endif; ?>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </details>
+
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'pz_monkey_stats', 'pz_monkey_stats_shortcode' );
+
 /* 2026-06-13 jdev Weißen Balken oben in Firefox entfernen wenn nicht eingeloggt */
 add_action( 'wp_head', function() {
     if ( ! is_user_logged_in() ) {
