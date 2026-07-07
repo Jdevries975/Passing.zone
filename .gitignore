@@ -35,3 +35,6 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# WordPress secrets - contains DB credentials and auth keys, never commit
+wp-config.php
