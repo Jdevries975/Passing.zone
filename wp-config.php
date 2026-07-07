@@ -109,4 +109,3 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once ABSPATH . 'wp-settings.php';
 
 define('JWT_AUTH_SECRET_KEY', '966777777');
-define('WP_ALLOW_REPAIR', true);
