@@ -833,3 +833,52 @@ hr.ninja-forms-field {
 	display: block;
 	text-align: center;
 }
+/* 2026-07-07 jdev Gravity Forms Styling */
+#gform_fields_1 {
+    align-items: end;
+}
+.gform_wrapper .gform_footer input[type="submit"],
+.gform_wrapper .gform-button,
+.gform_wrapper input.gform_button.button {
+    background-color: #33225D !important; /* dunkellila */
+    color: #ffffff !important;
+	font-size: 1.2em !important;
+    border: none !important;
+    border-radius: 4px;
+    padding: 10px 28px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.gform_wrapper .gform_footer input[type="submit"]:hover,
+.gform_wrapper input.gform_button.button:hover {
+    background-color: #00B3FF !important; /* tuerkis beim Hover */
+}
+.gform_wrapper input:focus,
+.gform_wrapper input:focus-visible,
+.gform_wrapper textarea:focus,
+.gform_wrapper select:focus,
+.gform_wrapper input[type="submit"]:focus-visible {
+    outline: 2px solid #00B3FF !important;
+    outline-offset: 1px;
+    border-color: #00B3FF !important;
+    box-shadow: 0 0 0 1px #00B3FF !important;
+}
+.gform_wrapper input[type="text"],
+.gform_wrapper input[type="email"],
+.gform_wrapper input[type="tel"],
+.gform_wrapper input[type="url"],
+.gform_wrapper input[type="number"],
+.gform_wrapper input[type="password"],
+.gform_wrapper textarea,
+.gform_wrapper select {
+    border: 2px solid #33225D !important; /* dark purple, same as your button */
+    border-radius: 4px !important;
+}
+.gform_wrapper .gfield_label,
+.gform_wrapper legend.gfield_label,
+.gform_wrapper .gform-field-label {
+    color: #33225D !important; /* dark purple */
+	font-size: 1rem !important;
+}

@@ -45,7 +45,37 @@ wp_deregister_style('font-awesome-6');
 wp_enqueue_style('font-awesome-6', get_stylesheet_directory_uri() . '/fonts/fontawesome-free-6.7.2-web/css/all.min.css');
 }
 add_action('wp_enqueue_scripts', 'additional_scripts_before',1000);
+add_action('admin_init', function () {
+    // Redirect any user trying to access comments page
+    global $pagenow;
+    if ($pagenow === 'edit-comments.php') {
+        wp_redirect(admin_url());
+        exit;
+    }
+    // Remove comments meta box from dashboard
+    remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
+    // Remove comments admin menu
+    remove_menu_page('edit-comments.php');
+});
 
+// Remove comments from post/page support
+add_action('init', function () {
+    remove_post_type_support('post', 'comments');
+    remove_post_type_support('page', 'comments');
+});
+
+// Close comments on the front-end
+add_filter('comments_open', '__return_false', 20, 2);
+add_filter('pings_open', '__return_false', 20, 2);
+
+// Hide existing comments
+add_filter('comments_array', '__return_empty_array', 10, 2);
+
+// Remove admin bar "Comments" link
+add_action('wp_before_admin_bar_render', function () {
+    global $wp_admin_bar;
+    $wp_admin_bar->remove_menu('comments');
+});
 function digwp_disable_gutenberg($is_enabled, $post_type) {
 	
 	if ($post_type === 'pattern') return false; // change book to your post type
@@ -315,3 +345,20 @@ add_action( 'wp_head', function() {
         echo '<style>html,body{margin-top:0!important;padding-top:0!important}</style>';
     }
 }, 99 );
+
+/* 2026-07-07 jdev Content-Restriction für Rolle "author" und höher.
+   Usage: [members-only]geschützter Inhalt[/members-only]
+   "publish_posts" ist die Capability, die author/editor/administrator haben,
+   aber subscriber/contributor nicht - damit lässt sich "author und höher" prüfen. */
+function pz_members_only_shortcode( $atts, $content = null ): string {
+    if ( current_user_can( 'publish_posts' ) ) {
+        return do_shortcode( (string) $content );
+    }
+
+    $login    = esc_url( 'https://passing.zone/login/' );
+    $register = esc_url( 'https://passing.zone/register/' );
+
+    return '<p class="pz-members-only-notice">Sorry, this is for Passing.zone members, only. '
+        . '<a href="' . $login . '">Login</a> or <a href="' . $register . '">become a member</a>. It&#8217;s free.</p>';
+}
+add_shortcode( 'members-only', 'pz_members_only_shortcode' );
