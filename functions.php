@@ -362,3 +362,259 @@ function pz_members_only_shortcode( $atts, $content = null ): string {
         . '<a href="' . $login . '">Login</a> or <a href="' . $register . '">become a member</a>. It&#8217;s free.</p>';
 }
 add_shortcode( 'members-only', 'pz_members_only_shortcode' );
+
+/* 2026-07-13 jdev Gravity Forms (Form 4) User-Auswahl-Felder ("Monkeys" = Feld 6,
+   "Pattern Author" = Feld 7): dynamisch mit allen WP-Usern befüllen
+   (Value = User-ID, Text = Anzeigename). Alle vier Hooks werden gebraucht,
+   damit die Choices beim Rendern, bei der Validierung, im Admin-Preview und
+   beim Absenden konsistent vorhanden sind. */
+add_action( 'gform_pre_render_4', 'pz_gf_populate_user_choices' );
+add_action( 'gform_pre_validation_4', 'pz_gf_populate_user_choices' );
+add_action( 'gform_pre_submission_filter_4', 'pz_gf_populate_user_choices' );
+add_action( 'gform_admin_pre_render_4', 'pz_gf_populate_user_choices' );
+function pz_gf_populate_user_choices( $form ) {
+    $user_select_field_ids = [ 6, 7 ];
+    foreach ( $form['fields'] as &$field ) {
+        if ( ! in_array( (int) $field->id, $user_select_field_ids, true ) ) {
+            continue;
+        }
+        $users   = get_users( [ 'orderby' => 'display_name', 'order' => 'ASC' ] );
+        $choices = [];
+        foreach ( $users as $user ) {
+            $choices[] = [ 'text' => $user->display_name, 'value' => $user->ID ];
+        }
+        $field->choices = $choices;
+    }
+    return $form;
+}
+
+/* 2026-07-13 jdev Gravity Forms (Form 4) "Pattern Difficulty" Radio-Feld
+   (Field 12): Choices dynamisch aus der echten "pattern-difficulty"-Taxonomie
+   befüllen, damit der übermittelte Wert immer exakt einem bestehenden Term
+   entspricht (Advanced Post Creation legt bei einem Namens-Mismatch sonst
+   stillschweigend einen neuen/doppelten Term an). */
+add_action( 'gform_pre_render_4', 'pz_gf_populate_difficulty_choices' );
+add_action( 'gform_pre_validation_4', 'pz_gf_populate_difficulty_choices' );
+add_action( 'gform_pre_submission_filter_4', 'pz_gf_populate_difficulty_choices' );
+add_action( 'gform_admin_pre_render_4', 'pz_gf_populate_difficulty_choices' );
+function pz_gf_populate_difficulty_choices( $form ) {
+    foreach ( $form['fields'] as &$field ) {
+        if ( (int) $field->id !== 12 ) {
+            continue;
+        }
+        $terms   = get_terms( [ 'taxonomy' => 'pattern-difficulty', 'hide_empty' => false ] );
+        $choices = [];
+        foreach ( $terms as $term ) {
+            $choices[] = [ 'text' => $term->name, 'value' => $term->name ];
+        }
+        $field->choices = $choices;
+    }
+    return $form;
+}
+
+/* 2026-07-13 jdev Gravity Forms (Form 4) "Number of Jugglers"-Feld (Field 13):
+   Choices dynamisch aus der echten "number-of-jugglers"-Taxonomie befüllen,
+   aus demselben Grund wie bei Field 12 (exakter Namens-Match statt versehentlich
+   neuer/doppelter Terms). */
+add_action( 'gform_pre_render_4', 'pz_gf_populate_jugglers_choices' );
+add_action( 'gform_pre_validation_4', 'pz_gf_populate_jugglers_choices' );
+add_action( 'gform_pre_submission_filter_4', 'pz_gf_populate_jugglers_choices' );
+add_action( 'gform_admin_pre_render_4', 'pz_gf_populate_jugglers_choices' );
+function pz_gf_populate_jugglers_choices( $form ) {
+    foreach ( $form['fields'] as &$field ) {
+        if ( (int) $field->id !== 13 ) {
+            continue;
+        }
+        $terms   = get_terms( [ 'taxonomy' => 'number-of-jugglers', 'hide_empty' => false ] );
+        $choices = [];
+        foreach ( $terms as $term ) {
+            $choices[] = [ 'text' => $term->name, 'value' => $term->name ];
+        }
+        $field->choices = $choices;
+    }
+    return $form;
+}
+
+/* 2026-07-13 jdev Gravity Forms (Form 4) "Pattern Type" Multi Select (Field 14)
+   und "Pattern Tags" Multi Select (Field 15): Choices dynamisch aus den echten
+   Taxonomien "pattern-type" / "pattern-tag" befüllen, aus demselben Grund wie
+   bei Field 12/13 (exakter Namens-Match statt versehentlich neuer/doppelter
+   Terms). */
+add_action( 'gform_pre_render_4', 'pz_gf_populate_type_and_tag_choices' );
+add_action( 'gform_pre_validation_4', 'pz_gf_populate_type_and_tag_choices' );
+add_action( 'gform_pre_submission_filter_4', 'pz_gf_populate_type_and_tag_choices' );
+add_action( 'gform_admin_pre_render_4', 'pz_gf_populate_type_and_tag_choices' );
+function pz_gf_populate_type_and_tag_choices( $form ) {
+    $taxonomies_by_field_id = [
+        14 => 'pattern-type',
+        15 => 'pattern-tag',
+    ];
+    foreach ( $form['fields'] as &$field ) {
+        if ( ! isset( $taxonomies_by_field_id[ (int) $field->id ] ) ) {
+            continue;
+        }
+        $terms   = get_terms( [ 'taxonomy' => $taxonomies_by_field_id[ (int) $field->id ], 'hide_empty' => false ] );
+        $choices = [];
+        foreach ( $terms as $term ) {
+            $choices[] = [ 'text' => $term->name, 'value' => $term->name ];
+        }
+        $field->choices = $choices;
+    }
+    return $form;
+}
+
+/* 2026-07-13 jdev Nach dem Erstellen des "pattern"-Posts über die Advanced
+   Post Creation Feed von Form 4: die ausgewählten User-IDs aus Feld 6/7
+   korrekt in die ACF-Felder "video_monkeys" / "pattern_author" schreiben
+   (per update_field statt roher Custom-Field-Mapping, damit ACF die Felder
+   im Backend wieder erkennt und richtig anzeigt).
+   Wichtig: Advanced Post Creation verarbeitet den Feed asynchron (im
+   Hintergrund, nach dem eigentlichen Formular-Request) - "gform_after_submission"
+   feuert dafür zu früh, der Post existiert an der Stelle noch nicht. Deshalb
+   der eigene "post_after_creation"-Hook des Add-Ons, der erst feuert, wenn
+   der Post wirklich angelegt wurde. */
+add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_save_user_selects_to_acf', 10, 4 );
+function pz_gf_save_user_selects_to_acf( $post_id, $feed, $entry, $form ) {
+    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
+        return;
+    }
+    $acf_fields_by_gf_field_id = [
+        '6' => 'video_monkeys',
+        '7' => 'pattern_author',
+    ];
+    foreach ( $acf_fields_by_gf_field_id as $gf_field_id => $acf_field_name ) {
+        $raw = rgar( $entry, $gf_field_id ); // z.B. '["15","25"]' (Multi Select speichert als JSON-Array)
+        $ids = array_filter( array_map( 'intval', (array) json_decode( $raw, true ) ) );
+        update_field( $acf_field_name, $ids, $post_id );
+    }
+}
+
+/* 2026-07-13 jdev Ein einziges Upload-Feld (Field 5, "Pattern Image") für
+   sowohl das native WordPress Featured Image als auch das ACF-Feld
+   "pattern_image" nutzen - damit man nicht zwei separate Upload-Felder im
+   Formular braucht. Feld 5 bleibt daher im Feed selbst UNGEMAPPT (weder unter
+   Featured Image noch unter Custom Fields), diese Funktion übernimmt beides.
+   Die von GF hochgeladene Datei liegt bereits lokal im gravity_forms-Ordner;
+   wir erstellen daraus ein echtes Attachment in der Mediathek (statt per
+   media_sideload_image() nochmal per HTTP zu laden - unnötig fragil wegen
+   der Cloudflare-Loopback-Problematik). */
+add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_set_featured_and_acf_image', 10, 4 );
+function pz_gf_set_featured_and_acf_image( $post_id, $feed, $entry, $form ) {
+    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
+        return;
+    }
+    $raw = rgar( $entry, '5' );
+    if ( empty( $raw ) ) {
+        return;
+    }
+    $image_url = strtok( $raw, '|' ); // Post Image speichert als "url|:|title|:|caption|:|description"
+    if ( ! $image_url ) {
+        return;
+    }
+    $upload_dir = wp_upload_dir();
+    $file_path  = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $image_url );
+    if ( ! file_exists( $file_path ) ) {
+        return;
+    }
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    $attachment_id = wp_insert_attachment(
+        [
+            'post_mime_type' => wp_check_filetype( $file_path )['type'],
+            'post_title'     => sanitize_file_name( basename( $file_path ) ),
+            'post_status'    => 'inherit',
+        ],
+        $file_path,
+        $post_id
+    );
+    wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $file_path ) );
+
+    set_post_thumbnail( $post_id, $attachment_id );
+    update_field( 'pattern_image', $attachment_id, $post_id );
+}
+
+/* 2026-07-13 jdev Excerpt-Feld (Field 18) in "post_excerpt" schreiben.
+   Advanced Post Creation hat im Content-Tab keinen Post-Excerpt-Slot (nur
+   Title, Content, Featured Image, Custom Fields) und die Custom-Fields-Mappings
+   schreiben nur Postmeta, keine echten wp_posts-Spalten - deshalb hier per
+   wp_update_post(), analog zum Featured-Image-Workaround oben. */
+add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_save_excerpt', 10, 4 );
+function pz_gf_save_excerpt( $post_id, $feed, $entry, $form ) {
+    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
+        return;
+    }
+    $excerpt = rgar( $entry, '18' );
+    if ( '' === $excerpt ) {
+        return;
+    }
+    wp_update_post( [
+        'ID'           => $post_id,
+        'post_excerpt' => $excerpt,
+    ] );
+}
+
+/* 2026-07-13 jdev Nach dem Erstellen des "pattern"-Posts: Raw Video (Field 19)
+   und Audiofile (Field 20) als geschützte (unterstrich-prefixte, nicht im
+   Custom-Fields-Metabox sichtbare) Postmeta speichern - kein Frontend-Display
+   vorgesehen - und zusammen mit Titel/Ort/Monkeys/Bild per Webhook an den
+   Hetzner-Renderserver schicken. */
+add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_send_render_webhook', 10, 4 );
+function pz_gf_send_render_webhook( $post_id, $feed, $entry, $form ) {
+    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
+        return;
+    }
+
+    $raw_video_url  = pz_gf_first_file_upload_url( rgar( $entry, '19' ) );
+    $audio_file_url = pz_gf_first_file_upload_url( rgar( $entry, '20' ) );
+
+    update_post_meta( $post_id, '_pz_raw_video_url', $raw_video_url );
+    update_post_meta( $post_id, '_pz_audio_file_url', $audio_file_url );
+    update_post_meta( $post_id, '_pz_music_attribution', rgar( $entry, '21' ) );
+
+    $known_monkey_ids   = array_filter( array_map( 'intval', (array) json_decode( rgar( $entry, '6' ), true ) ) );
+    $known_monkey_names = array_values( array_filter( array_map(
+        function ( $user_id ) {
+            $user = get_userdata( $user_id );
+            return $user ? $user->display_name : null;
+        },
+        $known_monkey_ids
+    ) ) );
+
+    $payload = [
+        'post_id'           => $post_id,
+        'title'             => rgar( $entry, '1' ),
+        'location'          => rgar( $entry, '3' ),
+        'monkeys'           => $known_monkey_names,
+        'monkeys_unlisted'  => rgar( $entry, '9' ),
+        'pattern_image_url' => strtok( rgar( $entry, '5' ), '|' ), // Post Image speichert als "url|:|title|:|caption|:|description"
+        'raw_video_url'     => $raw_video_url,
+        'audio_file_url'    => $audio_file_url,
+        'music_attribution' => rgar( $entry, '21' ),
+    ];
+
+    $response = wp_remote_post( 'http://91.99.57.23/ffmpeg/postrender', [
+        'headers' => [ 'Content-Type' => 'application/json' ],
+        'body'    => wp_json_encode( $payload ),
+        'timeout' => 30,
+    ] );
+
+    if ( is_wp_error( $response ) ) {
+        GFCommon::log_debug( 'pz_gf_send_render_webhook(): failed for post ' . $post_id . ' - ' . $response->get_error_message() );
+    } else {
+        GFCommon::log_debug( 'pz_gf_send_render_webhook(): sent for post ' . $post_id . ', response code ' . wp_remote_retrieve_response_code( $response ) );
+    }
+}
+
+/* Hilfsfunktion: ein GF File-Upload-Feldwert ist entweder ein einzelner
+   URL-String oder (bei aktiviertem Multi-File-Upload) ein JSON-Array von URLs
+   - liefert immer die erste URL. */
+function pz_gf_first_file_upload_url( $raw ) {
+    $raw = (string) $raw;
+    if ( '' === $raw ) {
+        return '';
+    }
+    if ( str_starts_with( trim( $raw ), '[' ) ) {
+        $urls = json_decode( $raw, true );
+        return is_array( $urls ) ? (string) reset( $urls ) : '';
+    }
+    return $raw;
+}
