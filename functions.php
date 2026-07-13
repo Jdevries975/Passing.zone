@@ -618,3 +618,57 @@ function pz_gf_first_file_upload_url( $raw ) {
     }
     return $raw;
 }
+
+/* 2026-07-13 jdev Sicherheitsnetz: falls ein User (z.B. durch fehlerhafte GF-Konfiguration
+   oder manuelle Anlage) ohne Anzeigename landet, "Vorname Nachname-Initiale." als Fallback setzen.
+   Greift NICHT ein, wenn der User bereits einen (auch freien) Anzeigenamen gesetzt hat. */
+function pz_ensure_display_name_fallback( $user_id ) {
+    static $running = [];
+    if ( ! empty( $running[ $user_id ] ) ) {
+        return;
+    }
+    $user = get_userdata( $user_id );
+    if ( ! $user || '' !== trim( (string) $user->display_name ) ) {
+        return;
+    }
+    $first_name = get_user_meta( $user_id, 'first_name', true );
+    if ( '' === $first_name ) {
+        return;
+    }
+    $last_name    = get_user_meta( $user_id, 'last_name', true );
+    $display_name = $first_name;
+    if ( '' !== $last_name ) {
+        $display_name .= ' ' . mb_strtoupper( mb_substr( $last_name, 0, 1 ) ) . '.';
+    }
+    $running[ $user_id ] = true;
+    wp_update_user( [ 'ID' => $user_id, 'display_name' => $display_name ] );
+}
+add_action( 'user_register', 'pz_ensure_display_name_fallback' );
+add_action( 'profile_update', 'pz_ensure_display_name_fallback' );
+
+/* 2026-07-13 jdev Prefill des "Profil bearbeiten"-Formulars mit den Daten des
+   eingeloggten Users, statt Gravity Forms per Query-String zu befüllen.
+   Parameter-Namen müssen im Formular (Feld > Advanced > "Allow field to be
+   populated dynamically" > Parameter Name) exakt so gesetzt werden. */
+function pz_prefill_from_current_user( $value, $field, $name ) {
+    if ( ! is_user_logged_in() ) {
+        return $value;
+    }
+    $user = wp_get_current_user();
+    switch ( $name ) {
+        case 'first_name':
+            return $user->first_name;
+        case 'last_name':
+            return $user->last_name;
+        case 'user_email':
+            return $user->user_email;
+        case 'nickname':
+            return get_user_meta( $user->ID, 'nickname', true );
+        default:
+            return $value;
+    }
+}
+add_filter( 'gform_field_value_first_name', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'first_name' ); }, 10, 2 );
+add_filter( 'gform_field_value_last_name', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'last_name' ); }, 10, 2 );
+add_filter( 'gform_field_value_user_email', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'user_email' ); }, 10, 2 );
+add_filter( 'gform_field_value_nickname', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'nickname' ); }, 10, 2 );

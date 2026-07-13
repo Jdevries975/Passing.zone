@@ -834,7 +834,16 @@ hr.ninja-forms-field {
 	text-align: center;
 }
 /* 2026-07-07 jdev Gravity Forms Styling */
-#gform_fields_1 {
+.gform_required_legend {display: none !important;
+}
+.gfield_required_asterisk {
+	color: var(--pz-orange) !important;
+	font-size: 1.6em !important;
+	line-height: 0 !important;
+	display: inline-block;
+	vertical-align: middle;
+}
+#gform_fields_1 , #gform_fields_6 {
     align-items: end;
 }
 .gform_wrapper .gform_footer input[type="submit"],
@@ -855,6 +864,18 @@ hr.ninja-forms-field {
 .gform_wrapper input.gform_button.button:hover {
     background-color: #00B3FF !important; /* tuerkis beim Hover */
 }
+.gform_wrapper input[type="text"],
+.gform_wrapper input[type="email"],
+.gform_wrapper input[type="tel"],
+.gform_wrapper input[type="url"],
+.gform_wrapper input[type="number"],
+.gform_wrapper input[type="password"],
+.gform_wrapper input[type="file"],
+.gform_wrapper textarea,
+.gform_wrapper select {
+    border: 2px solid #33225D !important; /* dark purple, same as your button */
+    border-radius: 4px !important;
+}
 .gform_wrapper input:focus,
 .gform_wrapper input:focus-visible,
 .gform_wrapper textarea:focus,
@@ -865,20 +886,27 @@ hr.ninja-forms-field {
     border-color: #00B3FF !important;
     box-shadow: 0 0 0 1px #00B3FF !important;
 }
-.gform_wrapper input[type="text"],
-.gform_wrapper input[type="email"],
-.gform_wrapper input[type="tel"],
-.gform_wrapper input[type="url"],
-.gform_wrapper input[type="number"],
-.gform_wrapper input[type="password"],
-.gform_wrapper textarea,
-.gform_wrapper select {
+.gform_wrapper .ginput_container_fileupload {
+    border: none !important;
+}
+.gform_wrapper .chosen-container.chosen-container-multi {
+    border: none !important;
+    box-shadow: none !important;
+}
+.gform_wrapper .chosen-container .chosen-single,
+.gform_wrapper .chosen-container .chosen-choices,
+.gform_wrapper .chosen-container-single .chosen-single,
+.gform_wrapper .chosen-container-multi .chosen-choices {
     border: 2px solid #33225D !important; /* dark purple, same as your button */
     border-radius: 4px !important;
+    box-shadow: none !important;
 }
 .gform_wrapper .gfield_label,
 .gform_wrapper legend.gfield_label,
 .gform_wrapper .gform-field-label {
     color: #33225D !important; /* dark purple */
 	font-size: 1rem !important;
+}
+.gform-theme--framework input[type="radio"]:where(:not(.gform-theme__disable):not(.gform-theme__disable *):not(.gform-theme__disable-framework):not(.gform-theme__disable-framework *))::before {
+    background-color: var(--pz-dark) !important;
 }
