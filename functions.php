@@ -93,7 +93,7 @@ add_action('init', 'my_init');
 
 /* 2025-10-14 Ein eigenes JavaScript mit jQuery korrekt hinzufügen (Enqueue a custom JS file with jQuery as a dependency)*/
 function jdev_custom_js_file() {
- 	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/jenny.js', array('jquery'), false, false);
+ 	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/jenny.js', array('jquery'), '1.0', false);
 	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/jdev.js', array('jquery'), false, false);
 	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/toggle-archive-extras.js', array('jquery'), false, false);
 	
@@ -672,3 +672,44 @@ add_filter( 'gform_field_value_first_name', function ( $value, $field ) { return
 add_filter( 'gform_field_value_last_name', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'last_name' ); }, 10, 2 );
 add_filter( 'gform_field_value_user_email', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'user_email' ); }, 10, 2 );
 add_filter( 'gform_field_value_nickname', function ( $value, $field ) { return pz_prefill_from_current_user( $value, $field, 'nickname' ); }, 10, 2 );
+
+/* 2026-07-16 jdev Gravity Forms (Form 1, Registrierung): kein separates
+   "Username"-Feld mehr - der Username wird automatisch aus Vor- und Nachname
+   (Feld 1, Advanced-Name: 1.3 = Vorname, 1.6 = Nachname) als "vorname.nachname"
+   erzeugt. Umlaute werden per remove_accents() transliteriert (ä->a, ö->o,
+   ü->u, ß->ss), damit sanitize_user() sie nicht einfach verwirft. Mehrteilige
+   Vornamen (z.B. "Anna Lena") werden mit Bindestrich verbunden, mehrteilige
+   Nachnamen (z.B. "de Vries") mit Punkt - so bleibt "vorname.nachname" immer
+   eindeutig als das trennende Element zwischen Vor- und Nachname erkennbar.
+   Ist der Username bereits vergeben, wird eine fortlaufende Nummer angehängt.
+   Die "Username"-Zuordnung im User-Registration-Feed kann auf ein beliebiges
+   vorhandenes Feld (z.B. E-Mail) zeigen - dieser Filter überschreibt den Wert
+   ohnehin immer. */
+add_filter( 'gform_username_1', 'pz_gf_generate_username_from_name', 10, 4 );
+function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
+    $first_name = trim( remove_accents( rgar( $entry, '1.3' ) ) );
+    $last_name  = trim( remove_accents( rgar( $entry, '1.6' ) ) );
+
+    // Mehrfache/innere Leerzeichen bei mehrteiligen Namen vereinheitlichen,
+    // bevor sie mit Bindestrich (Vorname) bzw. Punkt (Nachname) verbunden werden.
+    $first_part = preg_replace( '/\s+/', '-', $first_name );
+    $last_part  = preg_replace( '/\s+/', '.', $last_name );
+
+    $base_username = sanitize_user( strtolower( $first_part . '.' . $last_part ), true );
+    if ( '' === $base_username ) {
+        return $username;
+    }
+
+    if ( ! function_exists( 'username_exists' ) ) {
+        require_once ABSPATH . WPINC . '/registration.php';
+    }
+
+    $candidate = $base_username;
+    $suffix    = 2;
+    while ( username_exists( $candidate ) ) {
+        $candidate = $base_username . $suffix;
+        $suffix++;
+    }
+
+    return $candidate;
+}
