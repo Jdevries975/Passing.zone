@@ -526,21 +526,54 @@ function pz_gf_persist_dynamic_choices_form4() {
     }
 }
 
-/* 2026-07-13 jdev Nach dem Erstellen des "pattern"-Posts über die Advanced
-   Post Creation Feed von Form 4: die ausgewählten User-IDs aus Feld 6/7
-   korrekt in die ACF-Felder "video_monkeys" / "pattern_author" schreiben
-   (per update_field statt roher Custom-Field-Mapping, damit ACF die Felder
-   im Backend wieder erkennt und richtig anzeigt).
-   Wichtig: Advanced Post Creation verarbeitet den Feed asynchron (im
+/* 2026-07-19 jdev Advanced Post Creation feuert für "Post erstellt" und "Post
+   aktualisiert" zwei komplett getrennte Hooks mit unterschiedlicher
+   Parameter-Signatur:
+   - post_after_creation: ( $post_id, $feed, $entry, $form )
+   - post_update_post:    ( $post-Objekt, $feed, $entry )  [kein $form]
+   Wichtig: Advanced Post Creation verarbeitet seinen Feed asynchron (im
    Hintergrund, nach dem eigentlichen Formular-Request) - "gform_after_submission"
-   feuert dafür zu früh, der Post existiert an der Stelle noch nicht. Deshalb
-   der eigene "post_after_creation"-Hook des Add-Ons, der erst feuert, wenn
-   der Post wirklich angelegt wurde. */
-add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_save_user_selects_to_acf', 10, 4 );
-function pz_gf_save_user_selects_to_acf( $post_id, $feed, $entry, $form ) {
-    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
-        return;
-    }
+   feuert dafür zu früh, der Post existiert an der Stelle noch nicht (weder
+   beim Erstellen noch beim Aktualisieren). Deshalb ausschließlich diese
+   beiden eigenen Hooks des Add-Ons nutzen, die erst feuern, wenn der Post
+   wirklich (an)gelegt wurde.
+   Dieser Helper registriert einen Callback der Form ( $post_id, $entry )
+   einheitlich für beide Fälle, damit post-verarbeitende Logik (ACF-Felder,
+   Featured Image, Excerpt, Render-Webhook) nicht separat für Create und
+   Edit dupliziert werden muss - sonst funktioniert eine solche Funktion
+   nur beim Erstellen und schweigt beim Bearbeiten (genau das Bug-Muster,
+   das uns beim Raw-Video-Webhook und jetzt beim Featured Image begegnet
+   ist). */
+function pz_gf_on_pattern_post_saved( $callback ) {
+    add_action( 'gform_advancedpostcreation_post_after_creation', function ( $post_id, $feed, $entry, $form ) use ( $callback ) {
+        if ( $post_id && (int) rgar( $form, 'id' ) === 4 ) {
+            call_user_func( $callback, $post_id, $entry );
+        }
+    }, 10, 4 );
+
+    add_action( 'gform_advancedpostcreation_post_update_post', function ( $post, $feed, $entry ) use ( $callback ) {
+        if ( (int) rgar( $entry, 'form_id' ) !== 4 ) {
+            return;
+        }
+        // 2026-07-19 jdev: $post->ID ist beim Update-Hook in der Praxis 0
+        // (vermutlich ein APC-Bug) - der Entry selbst kennt die echte
+        // Post-ID zuverlässig über entry['post_id'], das nutzen wir zuerst.
+        $post_id = (int) rgar( $entry, 'post_id' );
+        if ( ! $post_id && $post ) {
+            $post_id = (int) rgar( (array) $post, 'ID' );
+        }
+        if ( $post_id ) {
+            call_user_func( $callback, $post_id, $entry );
+        }
+    }, 10, 3 );
+}
+
+/* 2026-07-13 jdev Die ausgewählten User-IDs aus Feld 6/7 korrekt in die
+   ACF-Felder "video_monkeys" / "pattern_author" schreiben (per update_field
+   statt roher Custom-Field-Mapping, damit ACF die Felder im Backend wieder
+   erkennt und richtig anzeigt). */
+pz_gf_on_pattern_post_saved( 'pz_gf_save_user_selects_to_acf' );
+function pz_gf_save_user_selects_to_acf( $post_id, $entry ) {
     $acf_fields_by_gf_field_id = [
         '6' => 'video_monkeys',
         '7' => 'pattern_author',
@@ -587,6 +620,40 @@ function pz_gf_resolve_user_ids_in_entries_list( $value, $form_id, $field_id, $e
     return implode( ', ', $names );
 }
 
+/* 2026-07-19 jdev Feld 1 ("Pattern name") ist vom Feldtyp "title" (Post
+   Title) - dieser Feldtyp bietet in der GF-Oberfläche keine "Max
+   Characters"-Option (im Gegensatz zu Single Line Text), deshalb hier per
+   Code auf 25 Zeichen begrenzen. */
+add_filter( 'gform_field_validation_4_1', 'pz_gf_limit_pattern_name_length', 10, 4 );
+function pz_gf_limit_pattern_name_length( $result, $value, $form, $field ) {
+    if ( mb_strlen( trim( (string) $value ) ) > 25 ) {
+        $result['is_valid'] = false;
+        $result['message']  = 'Pattern name darf maximal 25 Zeichen lang sein.';
+    }
+    return $result;
+}
+
+/* 2026-07-19 jdev Auf der "Pattern bearbeiten"-Seite (Edit Post Page von
+   Form 4) sind einzelne Felder (z.B. Raw Video/Feld 19, Audiofile/Feld 20)
+   zwar über die Post Editing Settings als editierbar markiert, bleiben aber
+   Pflichtfelder in Form 4 selbst - beim Bearbeiten OHNE Änderung an so einem
+   Feld wirft GF deshalb einen "Feld erforderlich"-Fehler, obwohl am Post
+   schon ein Wert steht. Deshalb "Required" pauschal für ALLE Felder nur auf
+   der Edit-Seite deaktivieren: leer lassen = bestehenden Wert behalten,
+   ausfüllen/hochladen = ersetzen. Auf der Create-Seite (bzw. überall sonst)
+   bleiben die Felder wie im Formular konfiguriert Pflicht. */
+add_filter( 'gform_pre_render_4', 'pz_gf_optional_on_edit_page' );
+add_filter( 'gform_pre_validation_4', 'pz_gf_optional_on_edit_page' );
+function pz_gf_optional_on_edit_page( $form ) {
+    if ( ! is_page( 'edit-pattern' ) ) {
+        return $form;
+    }
+    foreach ( $form['fields'] as &$field ) {
+        $field->isRequired = false;
+    }
+    return $form;
+}
+
 /* 2026-07-13 jdev Ein einziges Upload-Feld (Field 5, "Pattern Image") für
    sowohl das native WordPress Featured Image als auch das ACF-Feld
    "pattern_image" nutzen - damit man nicht zwei separate Upload-Felder im
@@ -595,12 +662,23 @@ function pz_gf_resolve_user_ids_in_entries_list( $value, $form_id, $field_id, $e
    Die von GF hochgeladene Datei liegt bereits lokal im gravity_forms-Ordner;
    wir erstellen daraus ein echtes Attachment in der Mediathek (statt per
    media_sideload_image() nochmal per HTTP zu laden - unnötig fragil wegen
-   der Cloudflare-Loopback-Problematik). */
-add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_set_featured_and_acf_image', 10, 4 );
-function pz_gf_set_featured_and_acf_image( $post_id, $feed, $entry, $form ) {
-    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
-        return;
+   der Cloudflare-Loopback-Problematik).
+   2026-07-19 jdev: Weil Feld 5 im Feed ungemappt ist, taucht es in den
+   Post Editing Settings ("welche Felder sind beim Bearbeiten editierbar")
+   vermutlich gar nicht als Option auf und bleibt deshalb auf der Edit-Seite
+   deaktiviert - ein neuer Upload kommt so nie im Entry an. Hier deshalb die
+   editierbare-Felder-Liste von Advanced Post Creation per Code um Feld 5
+   ergänzen, unabhängig davon, ob es in der UI wählbar ist. */
+add_filter( 'gform_advancedpostcreation_editable_fields', function ( $editable_fields, $feed ) {
+    if ( (int) rgar( $feed, 'form_id' ) !== 4 ) {
+        return $editable_fields;
     }
+    $editable_fields[] = 5;
+    return array_unique( $editable_fields );
+}, 10, 2 );
+
+pz_gf_on_pattern_post_saved( 'pz_gf_set_featured_and_acf_image' );
+function pz_gf_set_featured_and_acf_image( $post_id, $entry ) {
     $raw = rgar( $entry, '5' );
     if ( empty( $raw ) ) {
         return;
@@ -635,11 +713,8 @@ function pz_gf_set_featured_and_acf_image( $post_id, $feed, $entry, $form ) {
    Title, Content, Featured Image, Custom Fields) und die Custom-Fields-Mappings
    schreiben nur Postmeta, keine echten wp_posts-Spalten - deshalb hier per
    wp_update_post(), analog zum Featured-Image-Workaround oben. */
-add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_save_excerpt', 10, 4 );
-function pz_gf_save_excerpt( $post_id, $feed, $entry, $form ) {
-    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
-        return;
-    }
+pz_gf_on_pattern_post_saved( 'pz_gf_save_excerpt' );
+function pz_gf_save_excerpt( $post_id, $entry ) {
     $excerpt = rgar( $entry, '18' );
     if ( '' === $excerpt ) {
         return;
@@ -650,22 +725,36 @@ function pz_gf_save_excerpt( $post_id, $feed, $entry, $form ) {
     ] );
 }
 
-/* 2026-07-13 jdev Nach dem Erstellen des "pattern"-Posts: Raw Video (Field 19)
-   und Audiofile (Field 20) als geschützte (unterstrich-prefixte, nicht im
-   Custom-Fields-Metabox sichtbare) Postmeta speichern - kein Frontend-Display
-   vorgesehen - und zusammen mit Titel/Ort/Monkeys/Bild per Webhook an den
-   Hetzner-Renderserver schicken. */
-add_action( 'gform_advancedpostcreation_post_after_creation', 'pz_gf_send_render_webhook', 10, 4 );
-function pz_gf_send_render_webhook( $post_id, $feed, $entry, $form ) {
-    if ( ! $post_id || (int) rgar( $form, 'id' ) !== 4 ) {
-        return;
-    }
-
+/* 2026-07-19 jdev Nach dem Erstellen/Aktualisieren des "pattern"-Posts: Raw
+   Video (Field 19) und Audiofile (Field 20) als geschützte (unterstrich-
+   prefixte, nicht im Custom-Fields-Metabox sichtbare) Postmeta speichern -
+   kein Frontend-Display vorgesehen - und zusammen mit Titel/Ort/Monkeys/Bild
+   per Webhook an den Hetzner-Renderserver schicken.
+   Läuft bewusst über die eigenen Hooks von Advanced Post Creation statt über
+   das Gravity Forms Webhooks Add-on: Webhooks feuert synchron direkt beim
+   Submit, Advanced Post Creation verarbeitet seinen Feed aber asynchron im
+   Hintergrund - zu dem Zeitpunkt existiert post_id am Entry noch nicht.
+   Der Webhooks-Add-on-Feed für Form 4 ist deshalb deaktiviert, sonst gingen
+   zwei Requests raus. */
+pz_gf_on_pattern_post_saved( 'pz_gf_send_render_webhook' );
+function pz_gf_send_render_webhook( $post_id, $entry ) {
     $raw_video_url  = pz_gf_first_file_upload_url( rgar( $entry, '19' ) );
     $audio_file_url = pz_gf_first_file_upload_url( rgar( $entry, '20' ) );
 
-    update_post_meta( $post_id, '_pz_raw_video_url', $raw_video_url );
-    update_post_meta( $post_id, '_pz_audio_file_url', $audio_file_url );
+    // Beim Editieren ist Feld 19/20 nicht mehr Pflicht (siehe
+    // pz_gf_optional_on_edit_page) - kommt kein neuer Upload mit, bleibt der
+    // vorher gespeicherte Wert erhalten statt ihn mit einem leeren String zu
+    // überschreiben.
+    if ( '' !== $raw_video_url ) {
+        update_post_meta( $post_id, '_pz_raw_video_url', $raw_video_url );
+    } else {
+        $raw_video_url = get_post_meta( $post_id, '_pz_raw_video_url', true );
+    }
+    if ( '' !== $audio_file_url ) {
+        update_post_meta( $post_id, '_pz_audio_file_url', $audio_file_url );
+    } else {
+        $audio_file_url = get_post_meta( $post_id, '_pz_audio_file_url', true );
+    }
     update_post_meta( $post_id, '_pz_music_attribution', rgar( $entry, '21' ) );
 
     $known_monkey_ids   = array_filter( array_map( 'intval', (array) json_decode( rgar( $entry, '6' ), true ) ) );
