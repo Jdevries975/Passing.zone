@@ -463,6 +463,69 @@ function pz_gf_populate_type_and_tag_choices( $form ) {
     return $form;
 }
 
+/* 2026-07-18 jdev Die oben per gform_*_pre_render_4 injizierten Choices für
+   Felder 6, 7, 12, 13, 14, 15 gelten nur für Kontexte, die diese Hooks
+   tatsächlich feuern (Formular selbst, Validierung, Admin-Preview) bzw. für
+   die Entries-Liste über gform_entries_field_value. Die einzelne
+   Entry-Detailansicht (View Entry) rendert Auswahlfelder dagegen direkt aus
+   den in der Datenbank gespeicherten Feld-Choices, ohne diese Hooks zu
+   feuern - dort tauchen deshalb weiterhin rohe IDs/Werte statt Namen auf.
+   Deshalb hier zusätzlich die echten Choices dauerhaft in die
+   Formular-Definition selbst schreiben, damit Gravity Forms sie überall von
+   sich aus korrekt auflöst. Läuft gedrosselt (alle 5 Minuten) bei jedem
+   Admin-Seitenaufruf, damit neue User/Terms zeitnah einsortiert werden. */
+add_action( 'admin_init', 'pz_gf_persist_dynamic_choices_form4' );
+function pz_gf_persist_dynamic_choices_form4() {
+    if ( ! class_exists( 'GFAPI' ) || get_transient( 'pz_gf_choices_synced_4' ) ) {
+        return;
+    }
+    set_transient( 'pz_gf_choices_synced_4', 1, 5 * MINUTE_IN_SECONDS );
+
+    $form = GFAPI::get_form( 4 );
+    if ( ! $form ) {
+        return;
+    }
+
+    $users        = get_users( [ 'orderby' => 'display_name', 'order' => 'ASC' ] );
+    $user_choices = [];
+    foreach ( $users as $user ) {
+        $user_choices[] = [ 'text' => $user->display_name, 'value' => $user->ID ];
+    }
+
+    $taxonomies_by_field_id = [
+        12 => 'pattern-difficulty',
+        13 => 'number-of-jugglers',
+        14 => 'pattern-type',
+        15 => 'pattern-tag',
+    ];
+
+    $dirty = false;
+    foreach ( $form['fields'] as &$field ) {
+        $field_id = (int) $field->id;
+
+        if ( in_array( $field_id, [ 6, 7 ], true ) ) {
+            $new_choices = $user_choices;
+        } elseif ( isset( $taxonomies_by_field_id[ $field_id ] ) ) {
+            $terms       = get_terms( [ 'taxonomy' => $taxonomies_by_field_id[ $field_id ], 'hide_empty' => false ] );
+            $new_choices = [];
+            foreach ( $terms as $term ) {
+                $new_choices[] = [ 'text' => $term->name, 'value' => $term->name ];
+            }
+        } else {
+            continue;
+        }
+
+        if ( wp_json_encode( $field->choices ) !== wp_json_encode( $new_choices ) ) {
+            $field->choices = $new_choices;
+            $dirty           = true;
+        }
+    }
+
+    if ( $dirty ) {
+        GFAPI::update_form( $form );
+    }
+}
+
 /* 2026-07-13 jdev Nach dem Erstellen des "pattern"-Posts über die Advanced
    Post Creation Feed von Form 4: die ausgewählten User-IDs aus Feld 6/7
    korrekt in die ACF-Felder "video_monkeys" / "pattern_author" schreiben
@@ -487,6 +550,41 @@ function pz_gf_save_user_selects_to_acf( $post_id, $feed, $entry, $form ) {
         $ids = array_filter( array_map( 'intval', (array) json_decode( $raw, true ) ) );
         update_field( $acf_field_name, $ids, $post_id );
     }
+}
+
+/* 2026-07-18 jdev Gravity Forms (Form 4) Entries-Liste im Backend: Feld 6
+   ("Monkeys") und Feld 7 ("Pattern Author") speichern User-IDs als JSON-Array
+   (siehe pz_gf_save_user_selects_to_acf oben). Die per gform_*_pre_render_4
+   gesetzten dynamischen Choices lösen die IDs zwar im Formular selbst und in
+   der Entry-Detailansicht zu Namen auf, NICHT aber in der Entries-Liste -
+   dort rendert Gravity Forms die Spalte direkt aus dem rohen Entry-Wert.
+   Zusätzlich zeigt die eingebaute "Created By"-Spalte (= post_author, der
+   einreichende, angemeldete User) dort ebenfalls nur die rohe User-ID statt
+   des Namens. Deshalb hier beides manuell in Anzeigenamen auflösen. */
+add_filter( 'gform_entries_field_value', 'pz_gf_resolve_user_ids_in_entries_list', 10, 4 );
+function pz_gf_resolve_user_ids_in_entries_list( $value, $form_id, $field_id, $entry ) {
+    if ( (int) $form_id !== 4 ) {
+        return $value;
+    }
+
+    if ( 'created_by' === $field_id ) {
+        $user = get_userdata( (int) $value );
+        return $user ? $user->display_name : $value;
+    }
+
+    if ( ! in_array( (int) $field_id, [ 6, 7 ], true ) ) {
+        return $value;
+    }
+    $ids = json_decode( $value, true );
+    if ( ! is_array( $ids ) ) {
+        $ids = array_filter( [ $value ] );
+    }
+    $names = [];
+    foreach ( $ids as $id ) {
+        $user     = get_userdata( (int) $id );
+        $names[] = $user ? $user->display_name : $id;
+    }
+    return implode( ', ', $names );
 }
 
 /* 2026-07-13 jdev Ein einziges Upload-Feld (Field 5, "Pattern Image") für
@@ -686,7 +784,7 @@ add_filter( 'gform_field_value_nickname', function ( $value, $field ) { return p
    vorhandenes Feld (z.B. E-Mail) zeigen - dieser Filter überschreibt den Wert
    ohnehin immer. */
 add_filter( 'gform_username_1', 'pz_gf_generate_username_from_name', 10, 4 );
-function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
+function pz_gf_generate_username_from_name( $username, $feed, $entry, $form ) {
     $first_name = trim( remove_accents( rgar( $entry, '1.3' ) ) );
     $last_name  = trim( remove_accents( rgar( $entry, '1.6' ) ) );
 
