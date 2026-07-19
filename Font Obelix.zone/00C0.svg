@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="10.414mm"
+   height="17.93881mm"
+   viewBox="0 0 10.414 17.93881"
+   version="1.1"
+   id="svg327"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="a4.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview329"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="8"
+     inkscape:cx="8.4375"
+     inkscape:cy="49.6875"
+     inkscape:window-width="1920"
+     inkscape:window-height="1010"
+     inkscape:window-x="-6"
+     inkscape:window-y="-6"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs324" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-11.085813,-14.028401)">
+    <g
+       aria-label="A"
+       id="text3265"
+       style="font-size:12.7px;line-height:1.25;font-family:'Sans Serif Collection';-inkscape-font-specification:'Sans Serif Collection';display:inline;stroke-width:0.435701"
+       transform="translate(-100.04852,26.83364)" />
+    <g
+       aria-label="`"
+       transform="matrix(0.25752205,-0.96627242,-0.96627242,-0.25752205,82.548973,-2.7479195)"
+       id="g6560"
+       style="font-size:9.87777px;line-height:1.25;font-family:'Sans Serif Collection';-inkscape-font-specification:'Sans Serif Collection';letter-spacing:0.438875px;display:inline;fill:#000000;fill-opacity:1;stroke-width:0.10865">
+      <path
+         id="path6558"
+         style="font-family:ObelixPro;-inkscape-font-specification:ObelixPro;fill:#000000;fill-opacity:1"
+         d="m -34.926653,57.027403 1.101966,3.635176 -1.293745,0.97381 -1.416872,-4.119482 z m -16.246902,3.291861 q 6.26897,-0.229979 12.249848,0.393405 l 1.825571,-4.346151 q -4.928925,-2.142643 -11.110392,-6.034541 l -1.708686,3.224738 1.993745,1.016642 -0.844193,2.18125 -2.239043,-0.172107 z m 5.347042,-4.661314 4.28702,1.971579 -4.713456,-0.447378 z" />
+    </g>
+  </g>
+</svg>

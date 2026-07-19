@@ -25,26 +25,25 @@ return $mimes;
 }
 add_filter( 'upload_mimes', 'jdev_ext_mimes' );
 
-/*2025-02-05 jdev Einbindung self-hosted fonts*/
-function remove_external_fonts() {
-wp_deregister_style('generate-fonts');
-wp_enqueue_style('generate-fonts', get_stylesheet_directory_uri() . '/css/fonts.css');
-}
-add_action('wp_enqueue_scripts','remove_external_fonts');
-
 /*2025-02-05 jdev Verhindern, dass der Beaver Builder Google Fonts von Google abruft */
 add_filter( 'fl_builder_google_fonts_pre_enqueue', function( $fonts ) {
 return array();
 } );
 
-/* 2025-02-05 jdev Einbindung FontAwesome*/
+/* 2026-07-19 jdev Einbindung FontAwesome 7.3.1, zwingt Beaver Builder zur self-hosted Version */
 function additional_scripts_before() {
 wp_deregister_style('font-awesome');
 wp_dequeue_style('font-awesome');
+wp_deregister_style('font-awesome-5');
+wp_dequeue_style('font-awesome-5');
 wp_deregister_style('font-awesome-6');
-wp_enqueue_style('font-awesome-6', get_stylesheet_directory_uri() . '/fonts/fontawesome-free-6.7.2-web/css/all.min.css');
+wp_dequeue_style('font-awesome-6');
+wp_deregister_style('font-awesome-7');
+wp_dequeue_style('font-awesome-7');
+wp_enqueue_style('font-awesome-7', get_stylesheet_directory_uri() . '/fonts/fontawesome-free-7.3.1-web/css/all.min.css');
 }
 add_action('wp_enqueue_scripts', 'additional_scripts_before',1000);
+/* remove all comments functionality*/
 add_action('admin_init', function () {
     // Redirect any user trying to access comments page
     global $pagenow;
@@ -92,11 +91,9 @@ function my_init() {
 add_action('init', 'my_init');
 
 /* 2025-10-14 Ein eigenes JavaScript mit jQuery korrekt hinzufügen (Enqueue a custom JS file with jQuery as a dependency)*/
+/* 2026-07-19 jdev Handle umbenannt: kollidierte mit GeneratePress' eigenem 'custom-js'-Handle, wodurch jenny.js nie geladen wurde */
 function jdev_custom_js_file() {
- 	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/jenny.js', array('jquery'), '1.0', false);
-	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/jdev.js', array('jquery'), false, false);
-	wp_enqueue_script('custom-js', get_stylesheet_directory_uri() . '/js/toggle-archive-extras.js', array('jquery'), false, false);
-	
+ 	wp_enqueue_script('jdev-jenny-js', get_stylesheet_directory_uri() . '/js/jenny.js', array('jquery'), '1.0', false);
 }
 add_action('wp_enqueue_scripts', 'jdev_custom_js_file');
 /* jdev 2025-10-18 custom portable Hook for the active filter display Shortcode: [portable_hook hook_name="active_filters"]*/
