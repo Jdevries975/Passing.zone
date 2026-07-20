@@ -874,14 +874,41 @@ function pz_gf_generate_username_from_name( $username, $feed, $entry, $form ) {
     $first_name = trim( remove_accents( rgar( $entry, '1.3' ) ) );
     $last_name  = trim( remove_accents( rgar( $entry, '1.6' ) ) );
 
+    // Sicherheitsnetz: falls 1.3/1.6 bei der Übermittlung leer ankommen (z.B.
+    // durch einen JS-Reload oder eine fehlgeschlagene Client-Validierung, bei
+    // der die Namensfelder nicht neu befüllt wurden), auf Feld 1 als Ganzes
+    // zurückfallen und am ersten Leerzeichen in Vor-/Nachname trennen.
+    // Verhindert, dass ein leerer Vor-/Nachname zu einem Username aus nur
+    // einem Punkt führt (siehe Bug 2026-07-20 bei "Tine Oymann").
+    if ( '' === $first_name && '' === $last_name ) {
+        $full_name = trim( remove_accents( rgar( $entry, '1' ) ) );
+        if ( '' !== $full_name ) {
+            $parts      = preg_split( '/\s+/', $full_name, 2 );
+            $first_name = $parts[0];
+            $last_name  = isset( $parts[1] ) ? $parts[1] : '';
+        }
+    }
+
     // Mehrfache/innere Leerzeichen bei mehrteiligen Namen vereinheitlichen,
     // bevor sie mit Bindestrich (Vorname) bzw. Punkt (Nachname) verbunden werden.
     $first_part = preg_replace( '/\s+/', '-', $first_name );
     $last_part  = preg_replace( '/\s+/', '.', $last_name );
 
-    $base_username = sanitize_user( strtolower( $first_part . '.' . $last_part ), true );
+    // trim() entfernt einen führenden/nachgestellten Punkt, falls Vor- oder
+    // Nachname leer ist - sonst würde z.B. bei fehlendem Nachnamen ".vorname"
+    // oder bei fehlendem Vornamen "nachname." als Username entstehen.
+    $base_username = sanitize_user( strtolower( trim( $first_part . '.' . $last_part, '.' ) ), true );
+
+    // Letzter Fallback, falls gar kein Name ermittelt werden konnte: eindeutigen
+    // Username aus der Entry-ID bilden, statt einen leeren/ungültigen Username
+    // an wp_create_user() durchzureichen (führt sonst zu "Cannot create a user
+    // with an empty nicename").
     if ( '' === $base_username ) {
-        return $username;
+        $entry_id      = rgar( $entry, 'id' );
+        $base_username = $entry_id ? 'user' . $entry_id : $username;
+        if ( '' === $base_username ) {
+            return $username;
+        }
     }
 
     if ( ! function_exists( 'username_exists' ) ) {
