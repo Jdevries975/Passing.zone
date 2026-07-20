@@ -870,7 +870,7 @@ add_filter( 'gform_field_value_nickname', function ( $value, $field ) { return p
    vorhandenes Feld (z.B. E-Mail) zeigen - dieser Filter überschreibt den Wert
    ohnehin immer. */
 add_filter( 'gform_username_1', 'pz_gf_generate_username_from_name', 10, 4 );
-function pz_gf_generate_username_from_name( $username, $feed, $entry, $form ) {
+function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
     $first_name = trim( remove_accents( rgar( $entry, '1.3' ) ) );
     $last_name  = trim( remove_accents( rgar( $entry, '1.6' ) ) );
 
