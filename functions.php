@@ -924,3 +924,14 @@ function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
 
     return $candidate;
 }
+
+/* 2026-07-20 jdev REST-API-Discovery-Link fuer Autoren entfernen: Die "Monkeys"/
+   "Pattern Author"-User werden nicht als echter post_author gefuehrt (Zuordnung
+   laeuft ueber ACF, siehe pz_gf_populate_user_choices), daher stuft WP sie als
+   "nicht oeffentlich" ein und /wp-json/wp/v2/users/{id} liefert fuer anonyme
+   Requests 404 - obwohl WP Core den Link trotzdem in <head> und im HTTP-Link-
+   Header jeder Autoren-Seite ausgibt (rest_output_link_wp_head /
+   rest_output_link_header). Passt zur bestehenden REST-User-Enumeration-Sperre
+   in der .htaccess: der Link wird konsequent gar nicht erst beworben. */
+remove_action( 'wp_head', 'rest_output_link_wp_head', 10 );
+remove_action( 'template_redirect', 'rest_output_link_header', 11 );
