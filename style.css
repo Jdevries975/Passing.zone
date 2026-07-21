@@ -25,7 +25,7 @@
 	background: var(--pz-tuerkis);
 }
 h1, h2, .main-title, .obelix  {
-	font-family: var(--gp-font--obelixcode);
+	font-family: var(--gp-font--obelixzone);
 }
 body, .quicksand {
 	font-family: 'Quicksand';
