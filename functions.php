@@ -935,3 +935,15 @@ function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
    in der .htaccess: der Link wird konsequent gar nicht erst beworben. */
 remove_action( 'wp_head', 'rest_output_link_wp_head', 10 );
 remove_action( 'template_redirect', 'rest_output_link_header', 11 );
+
+/* 2026-07-21 jdev Nach dem Login alle Mitglieder bis einschließlich author
+   direkt zum Pattern-Upload schicken, statt ins wp-admin-Dashboard bzw. zu
+   my-account. "edit_others_posts" haben nur editor/administrator, nicht
+   author - wer sie hat, landet weiterhin ganz normal im Backend. */
+add_filter( 'login_redirect', 'pz_redirect_members_after_login', 10, 3 );
+function pz_redirect_members_after_login( $redirect_to, $requested_redirect_to, $user ) {
+    if ( $user instanceof WP_User && ! $user->has_cap( 'edit_others_posts' ) ) {
+        return 'https://passing.zone/upload-a-new-pattern/';
+    }
+    return $redirect_to;
+}
