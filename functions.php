@@ -223,7 +223,13 @@ function pz_monkey_stats_shortcode(): string {
     $user_id = $user->ID;
 
     // ACF User fields store IDs either as a plain integer (single value) or as
-    // a serialized PHP array of integers. The three clauses cover both formats.
+    // a serialized PHP array of integers. Matching the serialized array via a
+    // SQL LIKE on ";i:$user_id;" is unreliable: PHP's serialization format is
+    // "key;value;key;value;...", and the array's own (sequential, small-integer)
+    // keys can accidentally match a real user ID that was never actually
+    // selected as a monkey. So we only use the meta_query to narrow down to
+    // patterns that have the field at all, then decode the real stored value
+    // and compare it in PHP.
     $patterns = new WP_Query( [
         'post_type'      => 'pattern',
         'post_status'    => 'publish',
@@ -232,22 +238,9 @@ function pz_monkey_stats_shortcode(): string {
         'orderby'        => 'title',
         'order'          => 'ASC',
         'meta_query'     => [
-            'relation' => 'OR',
             [
                 'key'     => 'video_monkeys',
-                'value'   => $user_id,
-                'compare' => '=',
-                'type'    => 'NUMERIC',
-            ],
-            [
-                'key'     => 'video_monkeys',
-                'value'   => ';i:' . $user_id . ';',
-                'compare' => 'LIKE',
-            ],
-            [
-                'key'     => 'video_monkeys',
-                'value'   => ':"' . $user_id . '"',
-                'compare' => 'LIKE',
+                'compare' => 'EXISTS',
             ],
         ],
     ] );
@@ -263,6 +256,11 @@ function pz_monkey_stats_shortcode(): string {
         $patterns->the_post();
         $id = get_the_ID();
 
+        $monkey_ids = array_map( 'intval', (array) get_field( 'video_monkeys', $id, false ) );
+        if ( ! in_array( $user_id, $monkey_ids, true ) ) {
+            continue;
+        }
+
         $diff_terms = get_the_terms( $id, 'pattern-difficulty' );
         $diff_term  = ( $diff_terms && ! is_wp_error( $diff_terms ) ) ? $diff_terms[0] : null;
 
@@ -277,6 +275,10 @@ function pz_monkey_stats_shortcode(): string {
         ];
     }
     wp_reset_postdata();
+
+    if ( empty( $posts_list ) ) {
+        return '';
+    }
 
     // Order difficulty counts by taxonomy term order (numeric slug prefix).
     $all_diff_terms = get_terms( [ 'taxonomy' => 'pattern-difficulty', 'hide_empty' => false, 'orderby' => 'name' ] );
