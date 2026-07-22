@@ -2,7 +2,7 @@
 
 ## System
 - WordPress, gehostet auf Shared Hosting bei all-inkl.com
-- Cloudflare
+- Cloudflare, normalerweise mit "Under Attack Mode"
 
 ## Theme & Plugins
 - **Theme:** GeneratePress Premium (Child Theme)
@@ -11,3 +11,4 @@
 - **Custom Fields:** ACF Pro
 - **WP Rocket**
 - **Borlabs Cookie**
+- **Gravity Forms** for registration, login all forms and also pattern upload
