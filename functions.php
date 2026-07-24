@@ -362,6 +362,56 @@ function pz_members_only_shortcode( $atts, $content = null ): string {
 }
 add_shortcode( 'members-only', 'pz_members_only_shortcode' );
 
+/* 2026-07-22 jdev Login-Status-Button: Waschbär-Icon (eingeloggt) öffnet ein
+   Untermenü (My Account / My Author Page / Log Out), GIF (ausgeloggt) verlinkt
+   direkt zum Login. Usage: [pz_login_button] */
+function pz_login_button_shortcode(): string {
+    if ( is_user_logged_in() ) {
+        $icon        = esc_url( 'https://passing.zone/wp-content/uploads/badge_raccoon.svg' );
+        $account_url = esc_url( home_url( '/my-account/' ) );
+        $author_url  = esc_url( get_author_posts_url( get_current_user_id() ) );
+        $logout_url  = esc_url( wp_logout_url( home_url( '/' ) ) );
+
+        $html = '<div class="pz-login-button pz-login-button--menu">'
+            . '<button type="button" class="pz-login-button__toggle" aria-haspopup="true" aria-expanded="false">'
+            . '<img src="' . $icon . '" alt="Account menu" />'
+            . '</button>'
+            . '<ul class="pz-login-button__dropdown">'
+            . '<li><a href="' . $account_url . '">My Account</a></li>'
+            . '<li><a href="' . $author_url . '">My Author Page</a></li>'
+            . '<li><a href="' . $logout_url . '">Log Out</a></li>'
+            . '</ul>'
+            . '</div>';
+
+        static $script_printed = false;
+        if ( ! $script_printed ) {
+            $script_printed = true;
+            $html .= '<script>(function(){'
+                . 'document.addEventListener("click",function(e){'
+                . 'var t=e.target.closest(".pz-login-button__toggle");'
+                . 'document.querySelectorAll(".pz-login-button--menu.is-open").forEach(function(el){'
+                . 'if(!t||el!==t.closest(".pz-login-button--menu")){el.classList.remove("is-open");'
+                . 'var b=el.querySelector(".pz-login-button__toggle");if(b)b.setAttribute("aria-expanded","false");}'
+                . '});'
+                . 'if(t){var wrap=t.closest(".pz-login-button--menu");var open=wrap.classList.toggle("is-open");'
+                . 't.setAttribute("aria-expanded",open?"true":"false");}'
+                . '});'
+                . 'document.addEventListener("keydown",function(e){'
+                . 'if(e.key==="Escape"){document.querySelectorAll(".pz-login-button--menu.is-open").forEach(function(el){'
+                . 'el.classList.remove("is-open");var b=el.querySelector(".pz-login-button__toggle");if(b)b.setAttribute("aria-expanded","false");});}'
+                . '});'
+                . '})();</script>';
+        }
+    } else {
+        $url  = esc_url( 'https://passing.zone/login/' );
+        $icon = esc_url( 'https://passing.zone/wp-content/uploads/icons8-anmelden-abgerundet-rechts-30.gif' );
+        $html = '<a href="' . $url . '" class="pz-login-button"><img src="' . $icon . '" alt="Login" /></a>';
+    }
+
+    return $html;
+}
+add_shortcode( 'pz_login_button', 'pz_login_button_shortcode' );
+
 /* 2026-07-13 jdev Gravity Forms (Form 4) User-Auswahl-Felder ("Monkeys" = Feld 6,
    "Pattern Author" = Feld 7): dynamisch mit allen WP-Usern befüllen
    (Value = User-ID, Text = Anzeigename). Alle vier Hooks werden gebraucht,

@@ -371,7 +371,7 @@ function pz_finder_shortcode( $atts ): string {
 <style id="pz-finder-inline">
 :root{--pz-primary:#33225D;--pz-accent:#472779;--pz-superdark:#160E29;--pz-dark:#33225D;--pz-medium:#472779;--pz-light:#552F8C;--pz-flieder:#9682b4;--pz-mittelflieder:#ddd6ea;--pz-hellflieder:#eeebf4;--pz-lightgrey:#DADADA;--pz-tuerkis:#00b3ff;--pz-orange:#f9a500;--pz-mint:#cbf7d4}
 .pz-finder-wrap{width:100%;border-radius:12px;overflow:hidden;box-sizing:border-box}
-.pz-finder-section{padding:16px 16px;box-sizing:border-box}
+.pz-finder-section{padding:12px 16px;box-sizing:border-box}
 .pz-finder-wrap .pz-finder-slider-outer{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;gap:12px}
 .pz-finder-wrap .pz-finder-slider-viewport{flex:1;min-width:0;overflow:hidden;position:relative}
 .pz-finder-wrap .pz-finder-slider-track{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:8px;transition:transform 0.3s ease}
