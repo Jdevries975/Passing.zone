@@ -821,23 +821,39 @@ hr.ninja-forms-field {
 }
 /**************************************** pz-login-button shortcode *******/
 .pz-login-button {
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	line-height: 0;
 }
 .pz-login-button img {
-	height: 30px;
-	width: auto;
+	height: 30px !important;
+	width: auto !important;
+	max-width: none !important;
+}
+@media screen and (min-width: 768px) {
+	.pz-login-button img {
+		height: 60px !important;
+	}
 }
 .pz-login-button--menu {
 	position: relative;
 }
-.pz-login-button__toggle {
-	background: none;
+.pz-login-button__toggle,
+.pz-login-button__toggle:hover,
+.pz-login-button__toggle:focus,
+.pz-login-button__toggle:active,
+.pz-login-button--menu.is-open .pz-login-button__toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent !important;
 	border: none;
 	padding: 0;
 	margin: 0;
 	cursor: pointer;
 	line-height: 0;
+	box-shadow: none !important;
 }
 .pz-login-button__dropdown {
 	display: none;
@@ -848,7 +864,7 @@ hr.ninja-forms-field {
 	padding: 6px 0;
 	min-width: 180px;
 	list-style: none;
-	background: #fff;
+	background: var(--pz-dark);
 	border-radius: 6px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	z-index: 100;
@@ -859,12 +875,13 @@ hr.ninja-forms-field {
 .pz-login-button__dropdown li a {
 	display: block;
 	padding: 8px 16px;
-	color: var(--pz-dark);
+	color: #fff;
 	text-decoration: none;
 	white-space: nowrap;
+	line-height: 2;
 }
 .pz-login-button__dropdown li a:hover {
-	background: var(--pz-hellflieder);
+	background: var(--pz-medium);
 }
 
 .tags-center {

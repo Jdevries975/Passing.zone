@@ -362,14 +362,15 @@ function pz_members_only_shortcode( $atts, $content = null ): string {
 }
 add_shortcode( 'members-only', 'pz_members_only_shortcode' );
 
-/* 2026-07-22 jdev Login-Status-Button: Waschbär-Icon (eingeloggt) öffnet ein
-   Untermenü (My Account / My Author Page / Log Out), GIF (ausgeloggt) verlinkt
+/* 2026-07-22 jdev Login-Status-Button: Happy Juggler (eingeloggt) öffnet ein
+   Untermenü (My Account / My Author Page / Edit my Patterns / Log Out) (ausgeloggt) verlinkt
    direkt zum Login. Usage: [pz_login_button] */
 function pz_login_button_shortcode(): string {
     if ( is_user_logged_in() ) {
-        $icon        = esc_url( 'https://passing.zone/wp-content/uploads/badge_raccoon.svg' );
+        $icon        = esc_url( 'https://passing.zone/wp-content/uploads/happy_juggler_dark-bg.svg' );
         $account_url = esc_url( home_url( '/my-account/' ) );
         $author_url  = esc_url( get_author_posts_url( get_current_user_id() ) );
+        $edit_url    = esc_url( 'https://passing.zone/your-editable-patterns/' );
         $logout_url  = esc_url( wp_logout_url( home_url( '/' ) ) );
 
         $html = '<div class="pz-login-button pz-login-button--menu">'
@@ -379,6 +380,7 @@ function pz_login_button_shortcode(): string {
             . '<ul class="pz-login-button__dropdown">'
             . '<li><a href="' . $account_url . '">My Account</a></li>'
             . '<li><a href="' . $author_url . '">My Author Page</a></li>'
+            . '<li><a href="' . $edit_url . '">Edit My Patterns</a></li>'
             . '<li><a href="' . $logout_url . '">Log Out</a></li>'
             . '</ul>'
             . '</div>';
@@ -404,8 +406,12 @@ function pz_login_button_shortcode(): string {
         }
     } else {
         $url  = esc_url( 'https://passing.zone/login/' );
-        $icon = esc_url( 'https://passing.zone/wp-content/uploads/icons8-anmelden-abgerundet-rechts-30.gif' );
-        $html = '<a href="' . $url . '" class="pz-login-button"><img src="' . $icon . '" alt="Login" /></a>';
+        $icon = esc_url( 'https://passing.zone/wp-content/uploads/sad_juggler_dark-bg_fixed.svg' );
+        $html = '<div class="pz-login-button pz-login-button--menu">'
+            . '<a href="' . $url . '" class="pz-login-button__toggle">'
+            . '<img src="' . $icon . '" alt="Login" />'
+            . '</a>'
+            . '</div>';
     }
 
     return $html;
