@@ -31,7 +31,13 @@ return array();
 } );
 
 /* 2026-07-19 jdev Einbindung FontAwesome 7.3.1, zwingt Beaver Builder zur self-hosted Version */
+/* 2026-07-30 jdev Im Beaver Builder Editor/UI die eigene Font Awesome der Plugins NICHT ersetzen:
+   BB/PowerPack nutzen intern FA5-Klassen wie "far fa-copy", die es in FA7 Free (kein Regular-Style,
+   umbenannte Icons) nicht gibt -> Feld-Icons (Move/Duplicate/Delete) blieben sonst unsichtbar. */
 function additional_scripts_before() {
+if ( isset( $_GET['fl_builder'] ) || isset( $_GET['fl_builder_ui'] ) ) {
+	return;
+}
 wp_deregister_style('font-awesome');
 wp_dequeue_style('font-awesome');
 wp_deregister_style('font-awesome-5');
