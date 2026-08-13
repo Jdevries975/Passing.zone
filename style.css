@@ -912,8 +912,9 @@ hr.ninja-forms-field {
     align-items: end;
 }
 .gform_wrapper .gform_footer input[type="submit"],
-.gform_wrapper .gform-button,
+.gform_wrapper button.gform_button.button,
 .gform_wrapper input.gform_button.button {
+    --gf-local-bg-color: var(--pz-medium-light) !important;
     background-color: var(--pz-medium-light) !important; /* medium-light lila */
     color: #ffffff !important;
 	font-size: 1.2em !important;
@@ -926,8 +927,9 @@ hr.ninja-forms-field {
 }
 
 .gform_wrapper .gform_footer input[type="submit"]:hover,
-.gform_wrapper .gform-button:hover,
+.gform_wrapper button.gform_button.button:hover,
 .gform_wrapper input.gform_button.button:hover {
+    --gf-local-bg-color: var(--pz-dark) !important;
     background-color: var(--pz-dark) !important; /* dunkellila beim Hover */
 }
 .gform_wrapper input[type="text"],

@@ -16,6 +16,8 @@
     --pz-superlight: #ddd6ea;
     --pz-lightgrey: #AAA3BC;
     --pz-tuerkis: #00b3ff;
+    --pz-tuerkis-dark10: #008fcc;
+    --pz-tuerkis-dark20: #006b99;
     --pz-orange: #f9a500;
     --pz-mint: #cbf7d4;
 }
@@ -113,29 +115,55 @@ body.wp-admin,
    Regel spezifischer ist als die allgemeine .button-Regel weiter unten -
    sonst gewinnt deren lila Textfarbe gegen den weißen Text hier (lila
    Text auf lila Hintergrund). */
-.wp-core-ui .button.button-primary {
+.wp-core-ui .button.button-primary,
+.wp-core-ui .button-primary {
     background: var(--pz-medium-light);
     border-color: var(--pz-dark);
     color: #fff !important;
     box-shadow: none;
+    border-radius: 5px;
 }
 .wp-core-ui .button.button-primary:hover,
-.wp-core-ui .button.button-primary:focus {
+.wp-core-ui .button.button-primary:focus,
+.wp-core-ui .button-primary:hover,
+.wp-core-ui .button-primary:focus
+ {
     background: var(--pz-dark);
     border-color: var(--pz-dark);
     color: #fff !important;
+     border-radius: 5px;
 }
 .wp-core-ui .button,
 .wp-core-ui .button-secondary {
     color: var(--pz-medium-light);
     border-color: var(--pz-medium-light);
+     border-radius: 5px;
 }
 .wp-core-ui .button:hover,
 .wp-core-ui .button-secondary:hover {
     color: var(--pz-dark);
     border-color: var(--pz-dark);
+     border-radius: 5px;
 }
-
+.page-title-action {
+    background: var(--pz-medium-light) !important;
+    border-color: var(--pz-medium-light) !important;
+    color: #fff !important;
+    
+}
+.page-title-action:hover {
+    background: var(--pz-dark) !important;
+    border-color: var(--pz-dark);
+    color: #fff !important;
+    
+}
+.wrap .page-title-action {
+    border-radius: 5px;
+}
+#publish {
+    background: var(--pz-tuerkis) !important;
+    border-color: var(--pz-tuerkis) !important;
+}
 /* ── Fokus-Zustände (Inputs, Selects, Textareas, Buttons, Links) ── */
 .wp-core-ui input[type="text"]:focus,
 .wp-core-ui input[type="email"]:focus,
@@ -174,6 +202,22 @@ input[type="radio"]:checked::before {
 }
 .postbox .postbox-header {
     border-radius: 5px 5px 0 0;
+}
+
+/* ── Tabellen (list tables, z.B. Beiträge, Nutzer, Formulare) ── */
+table.widefat {
+    border-radius: 5px !important;
+    border-color: var(--pz-light) !important;
+}
+
+/* ── "Modern" Admin-Farbschema (Profil > Farbschema) auf Tuerkis ── */
+body.admin-color-modern {
+    --wp-admin-theme-color: var(--pz-tuerkis);
+    --wp-admin-theme-color--rgb: 0,179,255;
+    --wp-admin-theme-color-darker-10: var(--pz-tuerkis-dark10);
+    --wp-admin-theme-color-darker-10--rgb: 0,143,204;
+    --wp-admin-theme-color-darker-20: var(--pz-tuerkis-dark20);
+    --wp-admin-theme-color-darker-20--rgb: 0,107,153;
 }
 
 /* ── Notices ───────────────────────────────────────────────── */

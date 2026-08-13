@@ -116,11 +116,11 @@ function pz_render_styleguide_widget() {
                 </div>
             <?php endforeach; ?>
         </div>
-        <h4>Schriftart</h4>
-        <p style="font-family:'Obelix Zone Preview', sans-serif; font-size:26px; margin:4px 0;">Font: ObelixZone</p>
+        <h4>Fonts</h4>
+        <p style="font-family:'Obelix Zone Preview', sans-serif; font-size:26px; margin:4px 0;">Display font: ObelixZone</p>
         <p style="margin-top:0;">Free font "Obelix" with added custom characters (Jenny &amp; Juli).<br>
-            <a href="https://passing.zone/wp-content/uploads/ObelixZone.zip" download>Download ObelixZone.zip</a>
-        </p>
+            <a href="https://passing.zone/wp-content/uploads/ObelixZone.zip" download>Download ObelixZone.zip</a></p>
+			 <p style="font-family:'Obelix Zone Preview', sans-serif; font-size:22px; margin:4px 0;">Text font: Quicksand (Google font)</p>  
     </div>
     <?php
 }
