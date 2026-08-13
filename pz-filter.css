@@ -14,10 +14,9 @@
     --pz-superdark: #160E29;
     --pz-dark: #33225D;
 	--pz-medium: #472779;
-	--pz-light: #552F8C;
-	--pz-flieder: #9682b4;
-	--pz-mittelflieder: #ddd6ea;
-	--pz-hellflieder: #eeebf4;
+	--pz-medium-light: #552F8C;
+	--pz-light: #9682b4;
+	--pz-superlight: #ddd6ea;
 	--pz-lightgrey: #DADADA;
 	--pz-tuerkis: #00b3ff;
 	--pz-orange: #f9a500;
@@ -453,7 +452,7 @@
 
 .pz-finder-reset {
     flex:          0 0 auto;
-    background:     var(--pz-flieder);
+    background:     var(--pz-light);
     border:        1px solid var(--pz-dark);
     color:         var(--pz-dark);
     border-radius: 6px;
@@ -465,7 +464,7 @@
 }
 
 .pz-finder-reset:hover {
-    background: var(--pz-hellflieder);
+    background: var(--pz-superlight);
     color: var(--pz-dark);
     border:        1px solid var(--pz-dark);
 }

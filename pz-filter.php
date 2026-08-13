@@ -369,7 +369,7 @@ function pz_finder_shortcode( $atts ): string {
     if ( ! $finder_styles_printed ) :
         $finder_styles_printed = true; ?>
 <style id="pz-finder-inline">
-:root{--pz-primary:#33225D;--pz-accent:#472779;--pz-superdark:#160E29;--pz-dark:#33225D;--pz-medium:#472779;--pz-light:#552F8C;--pz-flieder:#9682b4;--pz-mittelflieder:#ddd6ea;--pz-hellflieder:#eeebf4;--pz-lightgrey:#DADADA;--pz-tuerkis:#00b3ff;--pz-orange:#f9a500;--pz-mint:#cbf7d4}
+:root{--pz-primary:#33225D;--pz-accent:#472779;--pz-superdark:#160E29;--pz-dark:#33225D;--pz-medium:#472779;--pz-medium-light:#552F8C;--pz-light:#9682b4;--pz-superlight:#ddd6ea;--pz-lightgrey:#DADADA;--pz-tuerkis:#00b3ff;--pz-orange:#f9a500;--pz-mint:#cbf7d4}
 .pz-finder-wrap{width:100%;border-radius:12px;overflow:hidden;box-sizing:border-box}
 .pz-finder-section{padding:12px 16px;box-sizing:border-box}
 .pz-finder-wrap .pz-finder-slider-outer{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center;gap:12px}
@@ -397,8 +397,8 @@ function pz_finder_shortcode( $atts ): string {
 .pz-finder-acc-body--tree{flex-direction:column;flex-wrap:nowrap;gap:4px}
 .pz-finder-term-btn--child{margin-left:20px;font-size:0.875rem;padding:7px 10px}
 .pz-finder-footer{display:flex;gap:12px;padding:14px 16px;background:var(--pz-dark);border-radius:16px;margin-top:12px;box-sizing:border-box}
-.pz-finder-reset{flex:0 0 auto;background:var(--pz-flieder);border:1px solid var(--pz-dark);color:var(--pz-dark);border-radius:6px;padding:6px 14px;font-size:1rem;cursor:pointer;transition:background 0.2s;white-space:nowrap}
-.pz-finder-reset:hover{background:var(--pz-hellflieder);color:var(--pz-dark);border:1px solid var(--pz-dark)}
+.pz-finder-reset{flex:0 0 auto;background:var(--pz-light);border:1px solid var(--pz-dark);color:var(--pz-dark);border-radius:6px;padding:6px 14px;font-size:1rem;cursor:pointer;transition:background 0.2s;white-space:nowrap}
+.pz-finder-reset:hover{background:var(--pz-superlight);color:var(--pz-dark);border:1px solid var(--pz-dark)}
 .pz-finder-find{flex:1;background:var(--pz-medium);border:1px solid #fff;color:#fff;border-radius:6px;padding:6px 14px;font-size:1rem;font-weight:600;cursor:pointer;transition:background 0.2s}
 .pz-finder-find:hover{background:var(--pz-tuerkis)}
 @media screen and (max-width:600px){

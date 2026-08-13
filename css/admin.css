@@ -1,0 +1,198 @@
+/* Passing.zone admin styles
+   2026-08-12 jdev: WordPress-Standardfarben (Adminbar, Adminmenu, Buttons,
+   Links, Fokus-Zustände, Notices) durch die pz-Farbpalette ersetzt.
+   Blauer WP-Akzent -> --pz-medium-light (dunklere Blau-Töne bei Hover/Aktiv
+   -> --pz-dark), Rot/Orange/Grün-Notices -> --pz-orange bzw. --pz-mint
+   (gleiche Konvention wie schon bei Ninja Forms in style.css).
+   --pz-* Variablen hier dupliziert, da style.css im wp-admin nicht geladen
+   wird (gleiches Muster wie in pz-filter.php). Bei Änderung der Palette in
+   style.css (:root) bitte auch hier nachziehen. */
+:root {
+    --pz-black: #160E29;
+    --pz-dark: #33225D;
+    --pz-medium: #472779;
+    --pz-medium-light: #552F8C;
+    --pz-light: #9682b4;
+    --pz-superlight: #ddd6ea;
+    --pz-lightgrey: #AAA3BC;
+    --pz-tuerkis: #00b3ff;
+    --pz-orange: #f9a500;
+    --pz-mint: #cbf7d4;
+}
+
+/* ── Seitenhintergrund (statt #F0F0F0) ────────────────────────── */
+html.wp-toolbar,
+body.wp-admin,
+#wpwrap,
+#wpcontent,
+#wpbody,
+#wpbody-content {
+    background: var(--pz-superlight) !important;
+}
+
+/* ── Admin bar ─────────────────────────────────────────────── */
+#wpadminbar {
+    background: var(--pz-black) !important;
+}
+#wpadminbar .ab-top-menu > li:hover > .ab-item,
+#wpadminbar .ab-top-menu > li > .ab-item:focus,
+#wpadminbar .ab-top-menu > li.hover > .ab-item,
+#wpadminbar .menupop.hover > .ab-item,
+#wpadminbar .ab-top-menu > li .ab-sub-wrapper {
+    background: var(--pz-dark) !important;
+}
+#wpadminbar .ab-item,
+#wpadminbar a.ab-item,
+#wpadminbar > #wp-toolbar span.ab-label {
+    color: #f0f0f1;
+}
+
+/* ── Admin-Menu (Sidebar) ──────────────────────────────────── */
+#adminmenu,
+#adminmenuback,
+#adminmenuwrap {
+    background: var(--pz-black);
+}
+#adminmenu .wp-submenu {
+    background: var(--pz-dark);
+}
+#adminmenu a {
+    color: #f0f0f1;
+}
+#adminmenu li.menu-top:hover,
+#adminmenu li.opensub > a.menu-top,
+#adminmenu li > a.menu-top:focus,
+#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,
+#adminmenu .wp-has-current-submenu .wp-submenu .wp-submenu-head,
+#adminmenu a.wp-has-current-submenu:focus + .wp-submenu,
+.folded #adminmenu li.current.menu-top {
+    background: var(--pz-medium-light) !important;
+    color: #fff !important;
+}
+#adminmenu .wp-submenu a:hover,
+#adminmenu .wp-submenu a:focus,
+#adminmenu li.menu-top:hover a.menu-top,
+#adminmenu li.menu-top:hover .wp-menu-name,
+#adminmenu a:hover {
+    color: var(--pz-tuerkis) !important;
+}
+#adminmenu div.wp-menu-image:before {
+    color: var(--pz-lightgrey);
+}
+#adminmenu .wp-has-current-submenu div.wp-menu-image:before,
+#adminmenu a.current div.wp-menu-image:before,
+#adminmenu li.menu-top:hover div.wp-menu-image:before,
+#adminmenu li.opensub div.wp-menu-image:before {
+    color: #fff;
+}
+
+/* Update-/Kommentar-Zähler (rote Bubbles) */
+#adminmenu .update-plugins,
+#adminmenu .awaiting-mod,
+#adminmenu .plugin-count,
+#wpadminbar .ab-icon .count,
+.update-plugins,
+.plugin-count,
+.update-count {
+    background: var(--pz-orange) !important;
+    color: #fff !important;
+}
+
+/* ── Links im Content-Bereich ──────────────────────────────── */
+#wpbody-content a,
+#wpbody a {
+    color: var(--pz-medium-light);
+}
+#wpbody-content a:hover,
+#wpbody a:hover {
+    color: var(--pz-dark);
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+/* .button.button-primary (2 Klassen) statt nur .button-primary, damit die
+   Regel spezifischer ist als die allgemeine .button-Regel weiter unten -
+   sonst gewinnt deren lila Textfarbe gegen den weißen Text hier (lila
+   Text auf lila Hintergrund). */
+.wp-core-ui .button.button-primary {
+    background: var(--pz-medium-light);
+    border-color: var(--pz-dark);
+    color: #fff !important;
+    box-shadow: none;
+}
+.wp-core-ui .button.button-primary:hover,
+.wp-core-ui .button.button-primary:focus {
+    background: var(--pz-dark);
+    border-color: var(--pz-dark);
+    color: #fff !important;
+}
+.wp-core-ui .button,
+.wp-core-ui .button-secondary {
+    color: var(--pz-medium-light);
+    border-color: var(--pz-medium-light);
+}
+.wp-core-ui .button:hover,
+.wp-core-ui .button-secondary:hover {
+    color: var(--pz-dark);
+    border-color: var(--pz-dark);
+}
+
+/* ── Fokus-Zustände (Inputs, Selects, Textareas, Buttons, Links) ── */
+.wp-core-ui input[type="text"]:focus,
+.wp-core-ui input[type="email"]:focus,
+.wp-core-ui input[type="password"]:focus,
+.wp-core-ui input[type="number"]:focus,
+.wp-core-ui input[type="url"]:focus,
+.wp-core-ui input[type="search"]:focus,
+.wp-core-ui textarea:focus,
+.wp-core-ui select:focus,
+.wp-core-ui .button:focus,
+.wp-core-ui .button-primary:focus,
+a:focus,
+a:focus-visible {
+    border-color: var(--pz-medium-light) !important;
+    box-shadow: 0 0 0 1px var(--pz-medium-light) !important;
+    outline-color: var(--pz-medium-light) !important;
+}
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    border-color: var(--pz-medium-light);
+    background: var(--pz-medium-light);
+}
+input[type="checkbox"]:checked::before,
+input[type="radio"]:checked::before {
+    color: var(--pz-medium-light);
+}
+
+/* ── Boxen (Postboxes/Metaboxen, Cards, Welcome-Panel, Plugin-Cards) ── */
+.postbox,
+.stuffbox,
+.card,
+.welcome-panel,
+.plugin-card {
+    border-radius: 5px !important;
+    border-color: var(--pz-light) !important;
+}
+.postbox .postbox-header {
+    border-radius: 5px 5px 0 0;
+}
+
+/* ── Notices ───────────────────────────────────────────────── */
+.notice,
+div.updated,
+div.error {
+    border-left-color: var(--pz-lightgrey);
+}
+.notice-success,
+div.updated {
+    border-left-color: var(--pz-mint) !important;
+}
+.notice-error,
+div.error {
+    border-left-color: var(--pz-orange) !important;
+}
+.notice-warning {
+    border-left-color: var(--pz-orange) !important;
+}
+.notice-info {
+    border-left-color: var(--pz-light) !important;
+}

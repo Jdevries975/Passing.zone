@@ -63,6 +63,101 @@ add_action('admin_init', function () {
     remove_menu_page('edit-comments.php');
 });
 
+/* 2026-08-12 jdev Yoast SEO Dashboard-Widgets ausblenden. Muss auf
+   wp_dashboard_setup laufen (nicht admin_init), da Yoast seine Widgets
+   erst dort registriert - vorher gibt's die IDs noch nicht zum Entfernen. */
+add_action('wp_dashboard_setup', function () {
+    remove_meta_box('wpseo-dashboard-overview', 'dashboard', 'normal');
+    remove_meta_box('wpseo-wincher-dashboard-overview', 'dashboard', 'normal');
+});
+
+/* 2026-08-12 jdev Custom Dashboard-Widget "Styleguide": Farben aus style.css
+   (:root) und Font-Download, damit die aktuellen Marken-Werte im wp-admin
+   griffbereit sind. Farben sind hier hart hinterlegt - bei Änderung in
+   style.css (:root) bitte auch hier nachziehen. */
+add_action('wp_dashboard_setup', function () {
+    wp_add_dashboard_widget('pz_styleguide', 'Styleguide', 'pz_render_styleguide_widget');
+});
+
+function pz_render_styleguide_widget() {
+    $colors = array(
+        'Black'         => '#160E29',
+        'Dark'          => '#33225D',
+        'Medium'        => '#472779',
+        'Medium light'  => '#552F8C',
+        'Light'         => '#9682B4',
+        'Superlight'    => '#DDD6EA',
+        'Lightgrey'     => '#AAA3BC',
+        'Tuerkis'       => '#00B3FF',
+        'Orange'        => '#F9A500',
+        'Mint'          => '#CBF7D4',
+    );
+    $font_dir = get_stylesheet_directory_uri() . '/' . rawurlencode('Font ObelixZone');
+    ?>
+    <style>
+        @font-face {
+            font-family: 'Obelix Zone Preview';
+            src: url('<?php echo esc_url($font_dir . '/ObelixZone.woff2'); ?>') format('woff2'),
+                 url('<?php echo esc_url($font_dir . '/ObelixZone.woff'); ?>') format('woff');
+            font-display: swap;
+        }
+    </style>
+    <div class="pz-styleguide-widget">
+        <h4 style="margin-top:0;">Colors</h4>
+        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <?php foreach ($colors as $name => $hex) :
+                list($r, $g, $b) = sscanf($hex, '#%02x%02x%02x');
+            ?>
+                <div style="width:130px; font-size:12px; line-height:1.5;">
+                    <div style="height:36px; border-radius:4px; border:1px solid #ccc; background:<?php echo esc_attr($hex); ?>;"></div>
+                    <strong><?php echo esc_html($name); ?></strong><br>
+                    <?php echo esc_html($hex); ?><br>
+                    rgb(<?php echo esc_html("$r, $g, $b"); ?>)
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <h4>Schriftart</h4>
+        <p style="font-family:'Obelix Zone Preview', sans-serif; font-size:26px; margin:4px 0;">Font: ObelixZone</p>
+        <p style="margin-top:0;">Free font "Obelix" with added custom characters (Jenny &amp; Juli).<br>
+            <a href="https://passing.zone/wp-content/uploads/ObelixZone.zip" download>Download ObelixZone.zip</a>
+        </p>
+    </div>
+    <?php
+}
+
+/* 2026-08-12 jdev Eigenes Admin-CSS fürs wp-admin-Styling laden. */
+add_action('admin_enqueue_scripts', function () {
+    wp_enqueue_style('pz-admin', get_stylesheet_directory_uri() . '/css/admin.css', array(), filemtime(get_stylesheet_directory() . '/css/admin.css'));
+});
+
+/* 2026-08-12 jdev Gleiches Admin-CSS auch auf wp-login.php laden, damit der
+   "Log In"-Button (.wp-core-ui .button.button-primary, siehe admin.css) dort
+   ebenfalls in pz-Lila statt WP-Standardblau erscheint. wp-login.php hat die
+   Body-Klasse "wp-core-ui" ebenfalls, die Regeln greifen also unverändert. */
+add_action('login_enqueue_scripts', function () {
+    wp_enqueue_style('pz-admin', get_stylesheet_directory_uri() . '/css/admin.css', array(), filemtime(get_stylesheet_directory() . '/css/admin.css'));
+});
+
+/* 2026-08-12 jdev Custom Dashboard-Widget "Mailing list". */
+add_action('wp_dashboard_setup', function () {
+    wp_add_dashboard_widget('pz_mailing_list', 'Mailing list', 'pz_render_mailing_list_widget');
+});
+
+function pz_render_mailing_list_widget() {
+    ?>
+    <p>To get on the mailing list, please send an email to <a href="mailto:pass-out-join@jonglaria.org">pass-out-join@jonglaria.org</a>.</p>
+    <?php
+}
+
+/* 2026-08-12 jdev Activity-Widget im Dashboard ("Kürzlich veröffentlicht" /
+   "Geplant") zeigt standardmäßig nur den Post-Type "post" und max. 5 Einträge.
+   Patterns mit aufnehmen und auf 15 Einträge erhöhen. */
+add_filter('dashboard_recent_posts_query_args', function ($query_args) {
+    $query_args['post_type'] = array('post', 'pattern');
+    $query_args['posts_per_page'] = 15;
+    return $query_args;
+});
+
 // Remove comments from post/page support
 add_action('init', function () {
     remove_post_type_support('post', 'comments');
@@ -1011,3 +1106,16 @@ function pz_redirect_members_after_login( $redirect_to, $requested_redirect_to, 
     }
     return $redirect_to;
 }
+
+/* 2026-08-12 jdev Native WP-Registrierung ist deaktiviert (users_can_register
+   = false), Registrierung läuft über Gravity Forms auf /register/. Der
+   "Register"-Link im BB-Themer-Login-Formular zeigt aber weiterhin auf
+   wp-login.php?action=register und landet dort auf der
+   registration=disabled-Meldung -> auf die eigene Registrierungsseite
+   umleiten, statt den Link im Login-Formular suchen/anpassen zu müssen. */
+add_action( 'login_init', function () {
+    if ( isset( $_GET['action'] ) && 'register' === $_GET['action'] ) {
+        wp_safe_redirect( home_url( '/register/' ) );
+        exit;
+    }
+} );

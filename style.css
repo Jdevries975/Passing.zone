@@ -8,13 +8,13 @@
  Version:      0.1
 */
 :root{
+	--pz-black: #160E29;
 	--pz-dark: #33225D;
 	--pz-medium: #472779;
-	--pz-light: #552F8C;
-	--pz-flieder: #9682b4;
-	--pz-mittelflieder: #ddd6ea;
-	--pz-hellflieder: #eeebf4;
-	--pz-lightgrey: #DADADA;
+	--pz-medium-light: #552F8C;
+	--pz-light: #9682b4;
+	--pz-superlight: #ddd6ea;
+	--pz-lightgrey: #AAA3BC;
 	--pz-tuerkis: #00b3ff;
 	--pz-orange: #f9a500;
 	--pz-mint: #cbf7d4;
@@ -297,7 +297,7 @@ body, .quicksand {
 }
 .wpc-filters-main-wrap a.wpc-filters-reset-button {
 	width: 25% !important;
-  	background-color: var(--pz-mittelflieder) !important;
+  	background-color: var(--pz-superlight) !important;
 	border-color: var(--pz-dark) !important;
 	color: var(--pz-dark);
 }
@@ -605,7 +605,7 @@ h3.resource-heading {
 .nf-form-content .nf-field-container input[type="date"],
 .nf-form-content .nf-field-container textarea,
 .nf-form-content .nf-field-container select {
-  	background-color: var(--pz-hellflieder) !important;
+  	background-color: var(--pz-superlight) !important;
   	border: 2px solid var(--pz-dark) !important;
   	border-radius: 8px !important;
   	color: var(--pz-dark) !important;
@@ -622,7 +622,7 @@ h3.resource-heading {
 }
 /* TExtarea wrapper*/
 .nf-form-content .nf-field-container.textarea-container .field-wrap {
-  background-color: var(--pz-hellflieder) !important;
+  background-color: var(--pz-superlight) !important;
   border-width: 2px;
   border-style: solid;
   border-color: var(--pz-dark) !important;
@@ -914,7 +914,7 @@ hr.ninja-forms-field {
 .gform_wrapper .gform_footer input[type="submit"],
 .gform_wrapper .gform-button,
 .gform_wrapper input.gform_button.button {
-    background-color: #33225D !important; /* dunkellila */
+    background-color: var(--pz-medium-light) !important; /* medium-light lila */
     color: #ffffff !important;
 	font-size: 1.2em !important;
     border: none !important;
@@ -926,8 +926,9 @@ hr.ninja-forms-field {
 }
 
 .gform_wrapper .gform_footer input[type="submit"]:hover,
+.gform_wrapper .gform-button:hover,
 .gform_wrapper input.gform_button.button:hover {
-    background-color: #00B3FF !important; /* tuerkis beim Hover */
+    background-color: var(--pz-dark) !important; /* dunkellila beim Hover */
 }
 .gform_wrapper input[type="text"],
 .gform_wrapper input[type="email"],
