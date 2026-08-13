@@ -191,6 +191,27 @@ input[type="radio"]:checked::before {
     color: var(--pz-medium-light);
 }
 
+/* ── Browser-Autofill (das hässliche Hellgelb bei gemerkten Logins) ──
+   Kommt vom Browser selbst, nicht von WP - Chrome/Edge malen den Hintergrund
+   der Autofill-Inputs per :-webkit-autofill immer selbst an, normales
+   background funktioniert da nicht. Trick: riesiger inset box-shadow in
+   Feldfarbe "überdeckt" das Gelb; -webkit-text-fill-color statt color, weil
+   Autofill auch die Textfarbe hart überschreibt. Firefox hält sich an
+   normales background-color auf :autofill. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+    -webkit-text-fill-color: var(--pz-dark) !important;
+    caret-color: var(--pz-dark);
+    transition: background-color 9999s ease-in-out 0s;
+}
+input:autofill {
+    background-color: #fff !important;
+    color: var(--pz-dark) !important;
+}
+
 /* ── Boxen (Postboxes/Metaboxen, Cards, Welcome-Panel, Plugin-Cards) ── */
 .postbox,
 .stuffbox,
@@ -239,4 +260,103 @@ div.error {
 }
 .notice-info {
     border-left-color: var(--pz-light) !important;
+}
+
+/* ── wp-login.php (Login, Lost Password, Reset Password) ─────────────
+   2026-08-13 jdev: Gleiche Datei wird schon per login_enqueue_scripts
+   auf wp-login.php geladen (s.o.), hier zusätzlich die Login-spezifischen
+   Regeln (Body-Klasse "login", nicht "wp-admin"). Formular-Look an
+   nf-form-content aus style.css angelehnt (superlight bg, pz-dark border,
+   8px radius), damit es zum Rest der Seite passt. */
+body.login {
+    background: var(--pz-superlight);
+}
+
+/* Logo: Passing.zone "PZ"-Marke statt WP-Logo, verlinkt per login_headerurl-Filter
+   zur Startseite. Das background-image selbst kommt per wp_add_inline_style aus
+   functions.php (absolute URL statt relativem Pfad hier). */
+body.login #login h1 a {
+    background-size: contain !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    width: 100%;
+    height: 84px;
+}
+
+body.login #loginform, 
+body.login #lostpasswordform, 
+body.login #resetpassform, 
+.login form {
+    background: var(--pz-superlight);
+    border: 2px solid var(--pz-superlight);
+    border-radius: 12px;
+    box-shadow: none;
+    padding: 26px 24px;
+}
+
+body.login #loginform label,
+body.login #lostpasswordform label,
+body.login #resetpassform label,
+body.login .forgetmenot label, 
+.login label {
+    color: var(--pz-dark) !important;
+    font-size: 16px;
+}
+
+body.login #loginform input[type="text"],
+body.login #loginform input[type="password"],
+body.login #loginform input[type="email"],
+body.login #lostpasswordform input[type="text"],
+body.login #lostpasswordform input[type="email"],
+body.login #resetpassform input[type="text"],
+body.login #resetpassform input[type="password"],
+body.login #resetpassform input[type="email"] 
+{
+    background-color: #fff !important;
+    border: 2px solid var(--pz-dark) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+body.login #loginform input[type="text"]:focus,
+body.login #loginform input[type="password"]:focus,
+body.login #loginform input[type="email"]:focus {
+    border-color: var(--pz-medium-light) !important;
+    box-shadow: 0 0 0 1px var(--pz-medium-light) !important;
+}
+
+body.login input[type="checkbox"]:checked {
+    border-color: var(--pz-dark);
+    background: var(--pz-dark);
+}
+
+/* Links unter der Box: "Registrieren", "Passwort vergessen?", "Zurück zu passing.zone" */
+body.login #nav a,
+body.login #backtoblog a {
+    color: var(--pz-medium-light);
+}
+body.login #nav a:hover,
+body.login #backtoblog a:hover {
+    color: var(--pz-dark);
+}
+
+/* Fehlermeldungen (falsches Passwort etc.) - Orange statt Rot, wie schon bei Ninja Forms */
+body.login #login_error {
+    border-left-color: var(--pz-orange) !important;
+    background: #fff6ed !important;
+    color: var(--pz-dark) !important;
+    border-radius: 4px;
+}
+
+/* Erfolgs-/Info-Meldungen (Passwort-Mail verschickt etc.) - Mint statt Grün */
+body.login .message {
+    border-left-color: var(--pz-mint) !important;
+    background: #edfbf8 !important;
+    color: var(--pz-dark) !important;
+    border-radius: 4px;
+}
+
+body.login #login {
+    width: 100%;
+    max-width: 360px;
 }

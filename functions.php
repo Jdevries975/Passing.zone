@@ -136,6 +136,30 @@ add_action('admin_enqueue_scripts', function () {
    Body-Klasse "wp-core-ui" ebenfalls, die Regeln greifen also unverändert. */
 add_action('login_enqueue_scripts', function () {
     wp_enqueue_style('pz-admin', get_stylesheet_directory_uri() . '/css/admin.css', array(), filemtime(get_stylesheet_directory() . '/css/admin.css'));
+
+    /* 2026-08-13 jdev Logo-URL per PHP statt relativem url(../images/...)
+       in admin.css - dort war der Pfad fürs Auge korrekt, das Logo blieb
+       aber unsichtbar (vermutlich Pfadauflösung/Caching-Problem mit der
+       SVG). Absolute URL per get_stylesheet_directory_uri() ist robust
+       dagegen, und das PNG (statt SVG) nimmt eine mögliche Fehlerquelle
+       bei den mm-Einheiten der SVG-viewBox raus. */
+    $logo_url = get_stylesheet_directory_uri() . '/images/passing_zone_logo_321D5B_1000x1000.png';
+    wp_add_inline_style(
+        'pz-admin',
+        'body.login #login h1 a { background-image: url(' . esc_url($logo_url) . ') !important; }'
+    );
+});
+
+/* 2026-08-13 jdev wp-login.php: Logo oben verlinkt standardmäßig auf
+   wordpress.org und zeigt "Powered by WordPress" als Title-Attribut -
+   stattdessen zur Startseite verlinken und den Site-Namen zeigen. Das
+   Logo-Bild selbst (Passing.zone-Wortmarke) kommt aus css/admin.css
+   (#login h1 a background-image). */
+add_filter('login_headerurl', function () {
+    return home_url('/');
+});
+add_filter('login_headertext', function () {
+    return get_bloginfo('name');
 });
 
 /* 2026-08-12 jdev Custom Dashboard-Widget "Mailing list". */
