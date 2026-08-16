@@ -3,6 +3,7 @@
 ## System
 - WordPress, gehostet auf Shared Hosting bei all-inkl.com
 - Cloudflare, normalerweise mit "Under Attack Mode"
+- language for both frontend and backend is English, GB
 
 ## Theme & Plugins
 - **Theme:** GeneratePress Premium (Child Theme)

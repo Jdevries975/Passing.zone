@@ -954,6 +954,20 @@ hr.ninja-forms-field {
     border-color: #00B3FF !important;
     box-shadow: 0 0 0 1px #00B3FF !important;
 }
+/* 2026-08-16 jdev The rule above misses <button> submit/"Save & Continue"
+   buttons (only input[type="submit"] was covered) - those fell back to
+   Gravity's own default blue focus outline. No border-color override
+   needed here, unlike the inputs above: these buttons have border: none. */
+.gform_wrapper .gform_footer input[type="submit"]:focus,
+.gform_wrapper .gform_footer input[type="submit"]:focus-visible,
+.gform_wrapper button.gform_button.button:focus,
+.gform_wrapper button.gform_button.button:focus-visible,
+.gform_wrapper input.gform_button.button:focus,
+.gform_wrapper input.gform_button.button:focus-visible {
+    outline: 2px solid #00B3FF !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px #00B3FF !important;
+}
 .gform_wrapper .ginput_container_fileupload {
     border: none !important;
 }
@@ -969,6 +983,19 @@ hr.ninja-forms-field {
     border-radius: 4px !important;
     box-shadow: none !important;
 }
+.gform_wrapper .chosen-container-active .chosen-single,
+.gform_wrapper .chosen-container-active .chosen-choices {
+    outline: 2px solid var(--pz-tuerkis) !important; /* was still Gravity's own default blue - see --gf-ctrl-outline-color-focus in its theme framework CSS */
+    outline-offset: 1px;
+    border-color: var(--pz-tuerkis) !important;
+    box-shadow: 0 0 0 1px var(--pz-tuerkis) !important;
+}
+.gform_wrapper .chosen-container-multi .chosen-choices li.search-choice {
+    background: var(--pz-medium-light) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 4px !important;
+}
 .gform_wrapper .gfield_label,
 .gform_wrapper legend.gfield_label,
 .gform_wrapper .gform-field-label {
@@ -977,6 +1004,169 @@ hr.ninja-forms-field {
 }
 .gform-theme--framework input[type="radio"]:where(:not(.gform-theme__disable):not(.gform-theme__disable *):not(.gform-theme__disable-framework):not(.gform-theme__disable-framework *))::before {
     background-color: var(--pz-dark) !important;
+}
+/* 2026-08-16 jdev Advanced Post Creation's own native "Current file: ..."
+   preview (id="gform_apc_current_file_{form}_{field}") kept showing up
+   alongside our own .pz-current-file row below despite being stripped via
+   preg_replace in pz_gf_add_current_file_row_on_edit_page() - can't fully
+   verify the exact injection point without live access (nested inside the
+   field description, possibly added by a hook that runs after content
+   filtering), so it's hidden here instead, which works regardless of how/
+   where it lands in the DOM. */
+.gform_apc_current_file {
+    display: none !important;
+}
+/* 2026-08-16 jdev "Current file" row on the Edit Pattern page
+   (image/video/audio upload fields), see
+   pz_gf_add_current_file_row_on_edit_page() in functions.php - reuses the
+   .pz-file-upload container look and .pz-clear-file trash button from the
+   uploader styling above, but the trash button here is visible immediately
+   (there's already a saved file, no need to wait for a selection) and
+   toggles a hidden "delete on save" checkbox rather than clearing a file
+   input - see the click handler in pz_gf_clear_file_button_script(). */
+.gform_wrapper .pz-current-file {
+    margin-bottom: 8px;
+}
+.gform_wrapper .pz-current-file .pz-file-upload__filename {
+    padding-left: 10px;
+}
+.gform_wrapper .pz-current-file .pz-file-upload__filename a {
+    color: var(--pz-medium-light);
+    font-weight: 600;
+}
+/* Note the compound ".pz-file-upload.pz-current-file" (not just
+   ".pz-current-file") below: this block sits BEFORE the general
+   ".pz-file-upload .pz-clear-file { display: none !important }" rule
+   further down, and both element carry .pz-file-upload too, so equal
+   specificity would let source order hand the win to that later "hidden"
+   rule regardless of what's declared here. The extra class beats it. */
+.gform_wrapper .pz-file-upload.pz-current-file .pz-clear-file {
+    display: inline-flex !important; /* overrides the "hidden until picked" default below - a current file already exists here */
+}
+.gform_wrapper .pz-current-file.is-marked-for-deletion .pz-file-upload__filename {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+.gform_wrapper .pz-file-upload.pz-current-file.is-marked-for-deletion .pz-clear-file {
+    background: var(--pz-dark) !important;
+}
+/* 2026-08-15 jdev Custom file picker for optional uploads (Pattern Image,
+   Audio File) on the Upload a New Pattern (create) page, see
+   pz_gf_add_clear_file_button_on_create_page() in functions.php: a square
+   "+" trigger opens the (visually hidden) native file input, the filename
+   shows next to it, and a square orange trash button (hidden until a file
+   is picked, see pz_gf_clear_file_button_script()) clears the selection. */
+/* 2026-08-16 jdev Gravity Forms' own theme framework (gravity-forms-theme-foundation.min.css,
+   loaded by the plugin) applies !important min-height/display rules to
+   generic button/input elements with a more specific selector than plain
+   classes here beat - min-height in particular isn't overridden just by
+   setting a smaller "height" from a less specific rule, it clamps the box
+   regardless of which rule "won" height itself. So everything below is
+   chained off ".gform_wrapper" for specificity and pins height/min-height/
+   max-height together with !important. The clear button is taken out of
+   the flex flow entirely (position: absolute) rather than relying on
+   flex-grow/margin-auto to push it right, since something in the framework
+   CSS was also interfering with that distribution. */
+.gform_wrapper .pz-file-upload {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    padding: 0 44px 0 2px !important; /* right padding reserves room for the absolutely positioned trash button */
+    box-sizing: border-box !important;
+    border: 2px solid #33225D !important; /* same as the other fields, see .gform_wrapper input[type="text"] etc. above */
+    border-radius: 4px !important;
+}
+.gform_wrapper .pz-file-upload:focus-within {
+    outline: 2px solid #00B3FF !important;
+    outline-offset: 1px;
+    border-color: #00B3FF !important;
+    box-shadow: 0 0 0 1px #00B3FF !important;
+}
+/* 2026-08-16 jdev Without this, the "+"/trash buttons themselves fell back
+   to Gravity Forms' own default (blue, but a different shade than our
+   --pz-tuerkis) focus ring when clicked/tabbed to directly - the
+   :focus-within rule above only styles the outer field, not the buttons'
+   own native focus outline. */
+.gform_wrapper .pz-file-upload .pz-file-upload__trigger:focus,
+.gform_wrapper .pz-file-upload .pz-file-upload__trigger:focus-visible,
+.gform_wrapper .pz-file-upload .pz-clear-file:focus,
+.gform_wrapper .pz-file-upload .pz-clear-file:focus-visible {
+    outline: 2px solid var(--pz-tuerkis) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 1px var(--pz-tuerkis) !important;
+}
+.gform_wrapper .pz-file-upload .pz-file-upload__trigger {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none;
+    border-radius: 2px;
+    background: var(--pz-dark) !important;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.gform_wrapper .pz-file-upload .pz-file-upload__trigger:hover {
+    background: var(--pz-medium-light) !important;
+}
+.gform_wrapper .pz-file-upload .pz-file-upload__filename {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--pz-black);
+    font-size: 0.9rem;
+    padding: 0 6px;
+}
+.gform_wrapper .pz-file-upload input[type="file"] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+.gform_wrapper .pz-file-upload .pz-clear-file {
+    display: none !important; /* toggled via JS using setProperty(..., 'important') - see pz_gf_clear_file_button_script() */
+    position: absolute !important;
+    top: 50% !important;
+    right: 2px !important;
+    transform: translateY(-50%) !important;
+    align-items: center;
+    justify-content: center;
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none;
+    border-radius: 2px;
+    background: var(--pz-orange) !important;
+    color: #fff;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.gform_wrapper .pz-file-upload .pz-clear-file:hover {
+    background: var(--pz-medium-light) !important;
 }
 /* Applications und Footer auf der Kolding-Seite ausblenden*/
 .page-id-3631 #applications, .page-id-3631 #about-and-support {

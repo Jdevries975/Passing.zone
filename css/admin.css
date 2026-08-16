@@ -1,12 +1,12 @@
 /* Passing.zone admin styles
-   2026-08-12 jdev: WordPress-Standardfarben (Adminbar, Adminmenu, Buttons,
-   Links, Fokus-Zustände, Notices) durch die pz-Farbpalette ersetzt.
-   Blauer WP-Akzent -> --pz-medium-light (dunklere Blau-Töne bei Hover/Aktiv
-   -> --pz-dark), Rot/Orange/Grün-Notices -> --pz-orange bzw. --pz-mint
-   (gleiche Konvention wie schon bei Ninja Forms in style.css).
-   --pz-* Variablen hier dupliziert, da style.css im wp-admin nicht geladen
-   wird (gleiches Muster wie in pz-filter.php). Bei Änderung der Palette in
-   style.css (:root) bitte auch hier nachziehen. */
+   2026-08-12 jdev: replaced the WordPress default colors (admin bar, admin
+   menu, buttons, links, focus states, notices) with the pz color palette.
+   Blue WP accent -> --pz-medium-light (darker blue tones on hover/active
+   -> --pz-dark), red/orange/green notices -> --pz-orange or --pz-mint
+   respectively (same convention already used for Ninja Forms in style.css).
+   --pz-* variables are duplicated here since style.css isn't loaded in
+   wp-admin (same pattern as in pz-filter.php). If the palette in style.css
+   (:root) changes, please update here too. */
 :root {
     --pz-black: #160E29;
     --pz-dark: #33225D;
@@ -22,7 +22,7 @@
     --pz-mint: #cbf7d4;
 }
 
-/* ── Seitenhintergrund (statt #F0F0F0) ────────────────────────── */
+/* ── Page background (instead of #F0F0F0) ─────────────────────── */
 html.wp-toolbar,
 body.wp-admin,
 #wpwrap,
@@ -88,7 +88,7 @@ body.wp-admin,
     color: #fff;
 }
 
-/* Update-/Kommentar-Zähler (rote Bubbles) */
+/* Update/comment counters (red bubbles) */
 #adminmenu .update-plugins,
 #adminmenu .awaiting-mod,
 #adminmenu .plugin-count,
@@ -100,7 +100,7 @@ body.wp-admin,
     color: #fff !important;
 }
 
-/* ── Links im Content-Bereich ──────────────────────────────── */
+/* ── Links in the content area ─────────────────────────────── */
 #wpbody-content a,
 #wpbody a {
     color: var(--pz-medium-light);
@@ -111,10 +111,10 @@ body.wp-admin,
 }
 
 /* ── Buttons ───────────────────────────────────────────────── */
-/* .button.button-primary (2 Klassen) statt nur .button-primary, damit die
-   Regel spezifischer ist als die allgemeine .button-Regel weiter unten -
-   sonst gewinnt deren lila Textfarbe gegen den weißen Text hier (lila
-   Text auf lila Hintergrund). */
+/* .button.button-primary (2 classes) instead of just .button-primary, so
+   this rule is more specific than the general .button rule further below -
+   otherwise its purple text color would win over the white text here
+   (purple text on a purple background). */
 .wp-core-ui .button.button-primary,
 .wp-core-ui .button-primary {
     background: var(--pz-medium-light);
@@ -164,7 +164,13 @@ body.wp-admin,
     background: var(--pz-tuerkis) !important;
     border-color: var(--pz-tuerkis) !important;
 }
-/* ── Fokus-Zustände (Inputs, Selects, Textareas, Buttons, Links) ── */
+/* ── ACF image field: edit/remove icons (pencil, X) ───────────── */
+.acf-image-uploader .acf-actions .acf-icon.dark,
+.acf-image-uploader .acf-actions .acf-icon.dark:before {
+    color: var(--pz-tuerkis) !important;
+}
+
+/* ── Focus states (inputs, selects, textareas, buttons, links) ── */
 .wp-core-ui input[type="text"]:focus,
 .wp-core-ui input[type="email"]:focus,
 .wp-core-ui input[type="password"]:focus,
@@ -191,13 +197,21 @@ input[type="radio"]:checked::before {
     color: var(--pz-medium-light);
 }
 
-/* ── Browser-Autofill (das hässliche Hellgelb bei gemerkten Logins) ──
-   Kommt vom Browser selbst, nicht von WP - Chrome/Edge malen den Hintergrund
-   der Autofill-Inputs per :-webkit-autofill immer selbst an, normales
-   background funktioniert da nicht. Trick: riesiger inset box-shadow in
-   Feldfarbe "überdeckt" das Gelb; -webkit-text-fill-color statt color, weil
-   Autofill auch die Textfarbe hart überschreibt. Firefox hält sich an
-   normales background-color auf :autofill. */
+/* ── Gravity Forms Chosen multiselect: selected chips (li.search-choice) ── */
+.chosen-container-multi .chosen-choices li.search-choice,
+.gform-theme--framework .gfield:where(.gfield--type-multiselect, .gfield--input-type-multiselect) .chosen-container-multi .chosen-choices li.search-choice {
+    background: var(--pz-medium-light) !important;
+    background-color: var(--pz-medium-light) !important;
+    color: #fff !important;
+}
+
+/* ── Browser autofill (the ugly light yellow on remembered logins) ──
+   Comes from the browser itself, not from WP - Chrome/Edge always paint
+   the background of autofill inputs themselves via :-webkit-autofill,
+   normal background doesn't work there. Trick: a huge inset box-shadow in
+   the field color "covers" the yellow; -webkit-text-fill-color instead of
+   color, because autofill also hard-overrides the text color. Firefox
+   respects normal background-color on :autofill. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -212,7 +226,7 @@ input:autofill {
     color: var(--pz-dark) !important;
 }
 
-/* ── Boxen (Postboxes/Metaboxen, Cards, Welcome-Panel, Plugin-Cards) ── */
+/* ── Boxes (postboxes/metaboxes, cards, welcome panel, plugin cards) ── */
 .postbox,
 .stuffbox,
 .card,
@@ -225,13 +239,13 @@ input:autofill {
     border-radius: 5px 5px 0 0;
 }
 
-/* ── Tabellen (list tables, z.B. Beiträge, Nutzer, Formulare) ── */
+/* ── Tables (list tables, e.g. posts, users, forms) ───────────── */
 table.widefat {
     border-radius: 5px !important;
     border-color: var(--pz-light) !important;
 }
 
-/* ── "Modern" Admin-Farbschema (Profil > Farbschema) auf Tuerkis ── */
+/* ── "Modern" admin color scheme (Profile > Color Scheme) to turquoise ── */
 body.admin-color-modern {
     --wp-admin-theme-color: var(--pz-tuerkis);
     --wp-admin-theme-color--rgb: 0,179,255;
@@ -263,18 +277,19 @@ div.error {
 }
 
 /* ── wp-login.php (Login, Lost Password, Reset Password) ─────────────
-   2026-08-13 jdev: Gleiche Datei wird schon per login_enqueue_scripts
-   auf wp-login.php geladen (s.o.), hier zusätzlich die Login-spezifischen
-   Regeln (Body-Klasse "login", nicht "wp-admin"). Formular-Look an
-   nf-form-content aus style.css angelehnt (superlight bg, pz-dark border,
-   8px radius), damit es zum Rest der Seite passt. */
+   2026-08-13 jdev: this same file is already loaded on wp-login.php via
+   login_enqueue_scripts (see above); here we add the login-specific rules
+   (body class "login", not "wp-admin"). The form look is modeled after
+   nf-form-content from style.css (superlight bg, pz-dark border, 8px
+   radius), so it matches the rest of the site. */
 body.login {
     background: var(--pz-superlight);
 }
 
-/* Logo: Passing.zone "PZ"-Marke statt WP-Logo, verlinkt per login_headerurl-Filter
-   zur Startseite. Das background-image selbst kommt per wp_add_inline_style aus
-   functions.php (absolute URL statt relativem Pfad hier). */
+/* Logo: Passing.zone "PZ" mark instead of the WP logo, linked to the
+   homepage via the login_headerurl filter. The background-image itself
+   comes from functions.php via wp_add_inline_style (absolute URL instead
+   of a relative path here). */
 body.login #login h1 a {
     background-size: contain !important;
     background-repeat: no-repeat !important;
@@ -330,7 +345,7 @@ body.login input[type="checkbox"]:checked {
     background: var(--pz-dark);
 }
 
-/* Links unter der Box: "Registrieren", "Passwort vergessen?", "Zurück zu passing.zone" */
+/* Links below the box: "Register", "Lost your password?", "Back to passing.zone" */
 body.login #nav a,
 body.login #backtoblog a {
     color: var(--pz-medium-light);
@@ -340,7 +355,7 @@ body.login #backtoblog a:hover {
     color: var(--pz-dark);
 }
 
-/* Fehlermeldungen (falsches Passwort etc.) - Orange statt Rot, wie schon bei Ninja Forms */
+/* Error messages (wrong password etc.) - orange instead of red, as already used for Ninja Forms */
 body.login #login_error {
     border-left-color: var(--pz-orange) !important;
     background: #fff6ed !important;
@@ -348,7 +363,7 @@ body.login #login_error {
     border-radius: 4px;
 }
 
-/* Erfolgs-/Info-Meldungen (Passwort-Mail verschickt etc.) - Mint statt Grün */
+/* Success/info messages (password email sent etc.) - mint instead of green */
 body.login .message {
     border-left-color: var(--pz-mint) !important;
     background: #edfbf8 !important;
