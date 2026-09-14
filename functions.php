@@ -1240,6 +1240,18 @@ function pz_gf_send_render_webhook( $post_id, $entry ) {
     }
     update_post_meta( $post_id, '_pz_music_attribution', rgar( $entry, '21' ) );
 
+    // 2026-09-14 jdev "Juggled at" (location, GF field 3) is stored as the
+    // ACF field "juggled_at" on the pattern post itself, and additionally
+    // sent to the render server so it can be burned into the video.
+    $juggled_at = rgar( $entry, '3' );
+    update_field( 'juggled_at', $juggled_at, $post_id );
+
+    // 2026-09-14 jdev "Monkeys unlisted" (free-text names with no WP account,
+    // GF field 9) is stored as the ACF field "video_monkeys_without_account"
+    // on the pattern post, same reasoning as juggled_at above.
+    $monkeys_unlisted = rgar( $entry, '9' );
+    update_field( 'video_monkeys_without_account', $monkeys_unlisted, $post_id );
+
     $known_monkey_ids   = array_filter( array_map( 'intval', (array) json_decode( rgar( $entry, '6' ), true ) ) );
     $known_monkey_names = array_values( array_filter( array_map(
         function ( $user_id ) {
@@ -1252,15 +1264,24 @@ function pz_gf_send_render_webhook( $post_id, $entry ) {
     $payload = [
         'post_id'           => $post_id,
         'title'             => rgar( $entry, '1' ),
-        'location'          => rgar( $entry, '3' ),
+        'location'          => $juggled_at,
+        'juggled_at'        => $juggled_at,
         'monkeys'           => $known_monkey_names,
-        'monkeys_unlisted'  => rgar( $entry, '9' ),
+        'monkeys_unlisted'  => $monkeys_unlisted,
         'pattern_image_url' => strtok( rgar( $entry, '5' ), '|' ), // Post Image speichert als "url|:|title|:|caption|:|description"
         'raw_video_url'     => $raw_video_url,
         'audio_file_url'    => $audio_file_url,
         'music_attribution' => rgar( $entry, '21' ),
     ];
 
+    pz_pattern_send_to_render_server( $post_id, $payload );
+}
+
+/* 2026-09-14 jdev Extracted from pz_gf_send_render_webhook() so a backend
+   edit (see pz_sync_pattern_backend_edit() below) can re-trigger the same
+   render job from post/ACF data directly, without going through a Gravity
+   Forms entry. */
+function pz_pattern_send_to_render_server( int $post_id, array $payload ) {
     $response = wp_remote_post( 'http://91.99.57.23/ffmpeg/postrender', [
         'headers' => [ 'Content-Type' => 'application/json' ],
         'body'    => wp_json_encode( $payload ),
@@ -1268,9 +1289,9 @@ function pz_gf_send_render_webhook( $post_id, $entry ) {
     ] );
 
     if ( is_wp_error( $response ) ) {
-        GFCommon::log_debug( 'pz_gf_send_render_webhook(): failed for post ' . $post_id . ' - ' . $response->get_error_message() );
+        GFCommon::log_debug( 'pz_pattern_send_to_render_server(): failed for post ' . $post_id . ' - ' . $response->get_error_message() );
     } else {
-        GFCommon::log_debug( 'pz_gf_send_render_webhook(): sent for post ' . $post_id . ', response code ' . wp_remote_retrieve_response_code( $response ) );
+        GFCommon::log_debug( 'pz_pattern_send_to_render_server(): sent for post ' . $post_id . ', response code ' . wp_remote_retrieve_response_code( $response ) );
     }
 }
 
@@ -1302,6 +1323,289 @@ function pz_delete_upload_file_by_url( $url ) {
     if ( $file_path && file_exists( $file_path ) ) {
         @unlink( $file_path );
     }
+}
+
+/* 2026-09-14 jdev Reverse lookup for pz_sync_pattern_backend_edit() below:
+   Advanced Post Creation stores the post it created/updated as entry meta
+   "post_id" on the originating Gravity Forms entry (that's how
+   pz_gf_on_pattern_post_saved() reads it back via rgar( $entry, 'post_id' )
+   on the update hook, and how APC's own "Edit Pattern" post-editing feature
+   finds the right entry for a given post_id in the first place) - queried
+   directly against the entry meta table since GFAPI::get_entries()
+   field_filters only match actual form fields or entry meta keys
+   registered via gform_entry_meta, and "post_id" is neither. */
+function pz_gf_entry_id_for_post( int $post_id ): int {
+    global $wpdb;
+    if ( ! class_exists( 'GFFormsModel' ) ) {
+        return 0;
+    }
+    $entry_meta_table = GFFormsModel::get_entry_meta_table_name();
+    $entry_id         = $wpdb->get_var( $wpdb->prepare(
+        "SELECT entry_id FROM {$entry_meta_table} WHERE meta_key = 'post_id' AND meta_value = %d ORDER BY entry_id DESC LIMIT 1",
+        $post_id
+    ) );
+    return $entry_id ? (int) $entry_id : 0;
+}
+
+/* Helper for pz_sync_pattern_backend_edit(): rebuilds the GF Post Image
+   field 5 value ("url|:|title|:|caption|:|description", see the strtok()
+   comment in pz_gf_send_render_webhook()) from the post's current featured
+   image, mapping WP's standard attachment fields the same way Gravity
+   Forms itself does (title/caption/description -> post_title/post_excerpt/
+   post_content). */
+function pz_gf_post_image_field_value_from_attachment( int $attachment_id ): string {
+    if ( ! $attachment_id ) {
+        return '';
+    }
+    $url = wp_get_attachment_url( $attachment_id );
+    if ( ! $url ) {
+        return '';
+    }
+    $attachment = get_post( $attachment_id );
+    return implode( '|:|', [
+        $url,
+        $attachment ? $attachment->post_title : '',
+        $attachment ? $attachment->post_excerpt : '',
+        $attachment ? $attachment->post_content : '',
+    ] );
+}
+
+/* Helper for pz_sync_pattern_backend_edit(): field 6 ("Monkeys") and field 7
+   ("Pattern Author") store selected user IDs as a JSON array of ID strings
+   (see pz_gf_save_user_selects_to_acf() above) - mirrors that exact format
+   when writing the ACF-side array of IDs back into the entry. */
+function pz_gf_user_ids_json( $acf_value ): string {
+    $ids = array_filter( array_map( 'intval', (array) $acf_value ) );
+    return (string) wp_json_encode( array_map( 'strval', array_values( $ids ) ) );
+}
+
+/* Helpers for pz_sync_pattern_backend_edit(): fields 12/13 (Pattern
+   Difficulty, Number of Jugglers) are single-value fields storing the exact
+   term NAME (see pz_gf_populate_difficulty_choices()/pz_gf_populate_jugglers_choices()
+   above - choices use the term name as both label and value); fields 14/15
+   (Pattern Type, Pattern Tags) are multi-selects storing a JSON array of
+   term names (see pz_gf_populate_type_and_tag_choices()). */
+function pz_gf_first_term_name( int $post_id, string $taxonomy ): string {
+    $terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'names' ] );
+    return ( is_array( $terms ) && ! empty( $terms ) ) ? (string) $terms[0] : '';
+}
+function pz_gf_term_names_json( int $post_id, string $taxonomy ): string {
+    $terms = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'names' ] );
+    return (string) wp_json_encode( is_array( $terms ) ? array_values( $terms ) : [] );
+}
+
+/* Helper for pz_sync_pattern_backend_edit(): fields 19/20 (Raw Video, Audio
+   File) may be configured for single or multiple files, so their entry
+   value is either a plain URL string or a JSON array of URLs (see
+   pz_gf_first_file_upload_url() above, which reads both). Writing back a
+   single, currently-saved URL from postmeta, this keeps whichever format
+   the entry already used instead of guessing. */
+function pz_gf_file_field_value_preserving_format( string $existing_raw, string $new_url ): string {
+    if ( '' === $new_url ) {
+        return '';
+    }
+    if ( str_starts_with( trim( $existing_raw ), '[' ) ) {
+        return (string) wp_json_encode( [ $new_url ] );
+    }
+    return $new_url;
+}
+
+/* Helper for pz_pattern_build_render_payload(): the ACF fields
+   "raw_video_upload"/"music_upload" (used on patterns created by hand, see
+   below) could be configured as a File, Video/oEmbed, or plain URL field -
+   handles whichever shape get_field() returns (attachment array, raw
+   attachment ID, or already a plain URL string). */
+function pz_pattern_resolve_file_field_url( $value ): string {
+    if ( is_array( $value ) && isset( $value['url'] ) ) {
+        return (string) $value['url'];
+    }
+    if ( is_numeric( $value ) ) {
+        $url = wp_get_attachment_url( (int) $value );
+        return $url ? (string) $url : '';
+    }
+    if ( is_string( $value ) ) {
+        return $value;
+    }
+    return '';
+}
+
+/* 2026-09-14 jdev Builds the exact render-webhook payload shape (see
+   pz_gf_send_render_webhook()) from the CURRENT post/ACF/meta state, rather
+   than from a Gravity Forms entry - used by pz_sync_pattern_backend_edit()
+   for both a form-created pattern (post and entry are already in sync at
+   that point, see there) and a pattern created by hand in wp-admin (no
+   entry exists at all).
+   raw_video_url/audio_file_url prefer the protected _pz_raw_video_url/
+   _pz_audio_file_url postmeta the form-driven flow always fills in; a
+   hand-created pattern never gets that meta set (there's no upload UI for
+   it, deliberately - see pz_gf_send_render_webhook()'s comment), so falls
+   back to the ACF fields "raw_video_upload"/"music_upload" instead. */
+function pz_pattern_build_render_payload( int $post_id ): array {
+    $post          = get_post( $post_id );
+    $attachment_id = get_post_thumbnail_id( $post_id );
+
+    $known_monkey_ids   = array_filter( array_map( 'intval', (array) get_field( 'video_monkeys', $post_id, false ) ) );
+    $known_monkey_names = array_values( array_filter( array_map(
+        function ( $user_id ) {
+            $user = get_userdata( $user_id );
+            return $user ? $user->display_name : null;
+        },
+        $known_monkey_ids
+    ) ) );
+
+    $juggled_at = (string) get_field( 'juggled_at', $post_id );
+
+    $raw_video_url = (string) get_post_meta( $post_id, '_pz_raw_video_url', true );
+    if ( '' === $raw_video_url ) {
+        $raw_video_url = pz_pattern_resolve_file_field_url( get_field( 'raw_video_upload', $post_id, false ) );
+    }
+    $audio_file_url = (string) get_post_meta( $post_id, '_pz_audio_file_url', true );
+    if ( '' === $audio_file_url ) {
+        $audio_file_url = pz_pattern_resolve_file_field_url( get_field( 'music_upload', $post_id, false ) );
+    }
+
+    return [
+        'post_id'           => $post_id,
+        'title'             => $post ? $post->post_title : '',
+        'location'          => $juggled_at,
+        'juggled_at'        => $juggled_at,
+        'monkeys'           => $known_monkey_names,
+        'monkeys_unlisted'  => (string) get_field( 'video_monkeys_without_account', $post_id ),
+        'pattern_image_url' => $attachment_id ? (string) wp_get_attachment_url( $attachment_id ) : '',
+        'raw_video_url'     => $raw_video_url,
+        'audio_file_url'    => $audio_file_url,
+        'music_attribution' => (string) get_post_meta( $post_id, '_pz_music_attribution', true ),
+    ];
+}
+
+/* Helper for pz_sync_pattern_backend_edit_without_entry(): a hand-created
+   pattern has no Gravity Forms entry to diff the new values against field
+   by field (unlike pz_sync_pattern_backend_edit_with_entry() below), so
+   "did anything video-relevant change" is instead answered by comparing a
+   hash of the last-sent payload, stored in postmeta after every send. */
+function pz_pattern_render_payload_fingerprint( array $payload ): string {
+    unset( $payload['post_id'] );
+    return md5( (string) wp_json_encode( $payload ) );
+}
+
+/* 2026-09-14 jdev A pattern post can also be edited directly in wp-admin,
+   bypassing the "Edit Pattern" Gravity Forms page entirely. Without this,
+   such a backend edit would only ever change the post/ACF data - the
+   underlying Gravity Forms entry (which is what pre-fills the "Edit
+   Pattern" form, see pz_gf_optional_on_edit_page() and friends) would keep
+   showing the OLD values, and worse: submitting that stale form again
+   later would silently overwrite the backend edit back to the old value
+   via pz_gf_send_render_webhook()/pz_gf_set_featured_and_acf_image()/etc.
+   Additionally, a pattern created entirely by hand (never submitted
+   through the form at all, so no entry exists to begin with) still gets
+   its video-relevant changes sent to the render server - see
+   pz_sync_pattern_backend_edit_without_entry() below.
+   Hooked on acf/save_post rather than save_post_pattern specifically
+   because acf/save_post only fires for a real ACF-metabox save in wp-admin
+   (or an acf_form() on the frontend) - never for the update_field() calls
+   this codebase itself makes from Advanced Post Creation's post-saved
+   hooks (see pz_gf_on_pattern_post_saved()), so there's no risk of this
+   looping back into itself. Priority 20 so ACF has already written its own
+   field values to the database by the time this runs. */
+add_action( 'acf/save_post', 'pz_sync_pattern_backend_edit', 20 );
+function pz_sync_pattern_backend_edit( $post_id ) {
+    $post_id = (int) $post_id;
+    if ( 'pattern' !== get_post_type( $post_id ) || wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+
+    $entry_id = pz_gf_entry_id_for_post( $post_id );
+    if ( $entry_id ) {
+        pz_sync_pattern_backend_edit_with_entry( $post_id, $entry_id );
+    } else {
+        pz_sync_pattern_backend_edit_without_entry( $post_id );
+    }
+}
+
+/* See pz_sync_pattern_backend_edit() above. Handles a pattern that DOES have
+   a linked Gravity Forms entry (created/last edited through the form at
+   some point): writes every field with a home on the post back into that
+   entry field-by-field, and re-renders only if a video-relevant one of them
+   actually changed. */
+function pz_sync_pattern_backend_edit_with_entry( int $post_id, int $entry_id ) {
+    $entry = GFAPI::get_entry( $entry_id );
+    if ( is_wp_error( $entry ) ) {
+        return;
+    }
+
+    $post          = get_post( $post_id );
+    $attachment_id = get_post_thumbnail_id( $post_id );
+
+    $new_values = [
+        '1'  => (string) $post->post_title,
+        '3'  => (string) get_field( 'juggled_at', $post_id ),
+        '5'  => pz_gf_post_image_field_value_from_attachment( $attachment_id ),
+        '9'  => (string) get_field( 'video_monkeys_without_account', $post_id ),
+        '6'  => pz_gf_user_ids_json( get_field( 'video_monkeys', $post_id, false ) ),
+        '7'  => pz_gf_user_ids_json( get_field( 'pattern_author', $post_id, false ) ),
+        '12' => pz_gf_first_term_name( $post_id, 'pattern-difficulty' ),
+        '13' => pz_gf_first_term_name( $post_id, 'number-of-jugglers' ),
+        '14' => pz_gf_term_names_json( $post_id, 'pattern-type' ),
+        '15' => pz_gf_term_names_json( $post_id, 'pattern-tag' ),
+        '18' => (string) $post->post_excerpt,
+        '19' => pz_gf_file_field_value_preserving_format( (string) rgar( $entry, '19' ), (string) get_post_meta( $post_id, '_pz_raw_video_url', true ) ),
+        '20' => pz_gf_file_field_value_preserving_format( (string) rgar( $entry, '20' ), (string) get_post_meta( $post_id, '_pz_audio_file_url', true ) ),
+        '21' => (string) get_post_meta( $post_id, '_pz_music_attribution', true ),
+    ];
+
+    // Fields that actually end up in the rendered video (see the $payload
+    // shape in pz_pattern_build_render_payload()) - only changes to these
+    // justify sending a new render job.
+    $video_relevant_field_ids = [ '1', '3', '5', '6', '9', '19', '20', '21' ];
+    $video_relevant_changed   = false;
+
+    foreach ( $new_values as $field_id => $new_value ) {
+        $old_value = (string) rgar( $entry, $field_id );
+        if ( $old_value === $new_value ) {
+            continue;
+        }
+        // An empty file/image field just means "nothing set on the post
+        // side" (e.g. no featured image ever chosen) - don't blow away an
+        // existing entry value with an empty string over that.
+        if ( '' === $new_value && in_array( $field_id, [ '5', '19', '20' ], true ) ) {
+            continue;
+        }
+        $result = GFAPI::update_entry_field( $entry_id, $field_id, $new_value );
+        if ( is_wp_error( $result ) ) {
+            error_log( 'pz_sync_pattern_backend_edit_with_entry(): failed to update entry ' . $entry_id . ' field ' . $field_id . ' - ' . $result->get_error_message() );
+            continue;
+        }
+        if ( in_array( $field_id, $video_relevant_field_ids, true ) ) {
+            $video_relevant_changed = true;
+        }
+    }
+
+    if ( ! $video_relevant_changed ) {
+        return;
+    }
+
+    $payload = pz_pattern_build_render_payload( $post_id );
+    pz_pattern_send_to_render_server( $post_id, $payload );
+    update_post_meta( $post_id, '_pz_render_fingerprint', pz_pattern_render_payload_fingerprint( $payload ) );
+}
+
+/* See pz_sync_pattern_backend_edit() above. Handles a pattern with NO linked
+   Gravity Forms entry at all (created entirely by hand in wp-admin) - there
+   is no per-field "old value" to diff against like in the with-entry case,
+   so instead compares a fingerprint of the current video-relevant payload
+   against the one stored after the last render, only sending a new render
+   job when that actually changed. */
+function pz_sync_pattern_backend_edit_without_entry( int $post_id ) {
+    $payload         = pz_pattern_build_render_payload( $post_id );
+    $new_fingerprint = pz_pattern_render_payload_fingerprint( $payload );
+    $old_fingerprint = get_post_meta( $post_id, '_pz_render_fingerprint', true );
+
+    if ( $new_fingerprint === $old_fingerprint ) {
+        return;
+    }
+
+    pz_pattern_send_to_render_server( $post_id, $payload );
+    update_post_meta( $post_id, '_pz_render_fingerprint', $new_fingerprint );
 }
 
 /* 2026-08-15 jdev Counterpart to pz_gf_send_render_webhook(): the Hetzner
