@@ -1,0 +1,35 @@
+# Verhindert die Ausführung von PHP- und ähnlichen Skript-Dateien
+# im Uploads-Ordner. Schutz gegen Web-Shells/Backdoors, die über
+# Datei-Uploads (z. B. Formulare, Mediathek, verwundbare Plugins)
+# eingeschleust werden.
+
+# PHP als Apache-Modul zusätzlich deaktivieren (falls vorhanden)
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Ausführung/Zugriff auf Skript-Dateien blockieren
+# (\.|$) erfasst auch Doppelendungen wie shell.php.jpg
+<FilesMatch "\.(?i:php|php\d|phtml|phar|pht|cgi|pl|py|asp|aspx|sh)(\.|$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Deny,Allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Hochgeladene HTML-Dateien nur zum Download anbieten, nicht im Browser
+# ausführen (sonst läuft darin enthaltenes JavaScript auf der eigenen Domain)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(?i:html?|xhtml)$">
+        Header set Content-Disposition "attachment"
+    </FilesMatch>
+</IfModule>
+
+# Verzeichnis-Auflistung im Uploads-Ordner verhindern
+Options -Indexes -ExecCGI

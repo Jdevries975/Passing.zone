@@ -15,28 +15,10 @@ Header unset ETag
 # developer.yahoo.com/performance/rules.html#etags
 FileETag None
 
-# Send CORS headers if browsers request them; enabled by default for images.
-<IfModule mod_setenvif.c>
-<IfModule mod_headers.c>
-# mod_headers, y u no match by Content-Type?!
-<FilesMatch "\.(avifs?|cur|gif|png|jpe?g|svgz?|ico|webp)$">
-SetEnvIf Origin ":" IS_CORS
-Header set Access-Control-Allow-Origin "*" env=IS_CORS
-</FilesMatch>
-</IfModule>
-</IfModule>
-
-# Allow access to web fonts from all domains.
-<FilesMatch "\.(eot|otf|tt[cf]|woff2?)$">
-<IfModule mod_headers.c>
-Header set Access-Control-Allow-Origin "*"
-</IfModule>
-</FilesMatch>
-
 <IfModule mod_alias.c>
 <FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml)$">
 <IfModule mod_headers.c>
-Header set X-Powered-By "WP Rocket/3.22"
+Header set X-Powered-By "WP Rocket/3.23.4"
 Header unset Pragma
 Header append Cache-Control "public"
 Header unset Last-Modified
@@ -140,224 +122,93 @@ Header append Vary: Accept-Encoding
 
 # END WP Rocket
 
-# BEGIN IP Whitelist
-# IPs die immer Zugriff erhalten, unabhaengig von allen Blocking-Regeln.
-<IfModule mod_setenvif.c>
-    # Lars Lehmann – Videoserver (Hetzner 91.99.57.23)
-    SetEnvIf REMOTE_ADDR "^91\.99\.57\.23$" IP_WHITELISTED=1
-</IfModule>
-# END IP Whitelist
+# BEGIN jdev Security
+# 2026-09-25 jdev Härtung (analog ju-like/ART.athletes). Muss VOR dem WordPress-Block stehen.
+# Header stehen bewusst hier und nicht in PHP: WP Rocket liefert gecachte Seiten aus,
+# ohne dass WordPress/functions.php läuft.
+# Bot- und IP-Sperren liegen seit 2026-09-25 in Cloudflare (Security/WAF), nicht mehr hier:
+# hinter Cloudflare sieht Apache ggf. nur Cloudflare-IPs.
+# HTTP -> HTTPS und ohne www macht Cloudflare (keine eigene Regel: bei SSL-Modus "Flexible" Schleife).
 
-# BEGIN IP Blocking
-# Geblockte IPs aus Log-Analyse
-<IfModule mod_rewrite.c>
-RewriteEngine On
+# Kein Verzeichnis-Listing, kein MultiViews
+Options -Indexes -MultiViews
 
-    # 15.229.155.227 – Vulnerability-Scanner (12.05.2026)
-    #                  Systematisches Abklopfen von .env.*, .git/config etc.
-    RewriteCond %{REMOTE_ADDR} ^15\.229\.155\.227$ [OR]
-
-    # 136.144.42.47 – WP-/User-Enumeration und Login-Scan
-    #                 wp-login.php, wp-admin, ?author=1, feed, REST users
-    RewriteCond %{REMOTE_ADDR} ^136\.144\.42\.47$ [OR]
-
-    # 46.101.217.74 – Zugriff auf WooCommerce Customers API
-    RewriteCond %{REMOTE_ADDR} ^46\.101\.217\.74$ [OR]
-
-    # Vietnam – Koordiniertes Bot-Netzwerk (VNPT / Viettel / FPT)
-    # Log-Analyse 12.06.2026: ~18 IPs in 10 Sekunden, gefälschte Chrome-UAs (v99–107),
-    # identische 404-URLs von mehreren IPs gleichzeitig → eindeutig distributed scraping.
-    # Ranges: VNPT 14.174.x, 14.190-191.x; Viettel 14.226-227.x, 14.254.x, 113.168.x, 182.8.x;
-    #         FPT 14.243.x, 14.245.x; VNPT/Viettel 113.180-187.x, 123.16-19.x, 123.24.x
-    RewriteCond %{REMOTE_ADDR} ^14\.174\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^14\.19[01]\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^14\.22[67]\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^14\.243\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^14\.245\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^14\.254\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^113\.168\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^113\.18[0-7]\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^123\.1[6-9]\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^123\.24\. [OR]
-    RewriteCond %{REMOTE_ADDR} ^182\.8\.
-    RewriteCond %{ENV:IP_WHITELISTED} !1
-    RewriteRule .* - [F,L]
-
-</IfModule>
-# END IP Blocking
-
-# BEGIN Protected Paths
-<IfModule mod_rewrite.c>
-RewriteEngine On
-
-    # Whitelisted IPs: alle Sperren im Block uebergehen
-    RewriteCond %{ENV:IP_WHITELISTED} 1
-    RewriteRule .* - [L]
-
-    # Ninja Forms Upload-Verzeichnis: Direkt-Downloads sperren
-    # Grosse Mediendateien (Videos, Audio) sollen nicht direkt abrufbar sein
-    RewriteCond %{REQUEST_URI} ^/wp-content/uploads/ninja-forms/ [NC]
-    RewriteRule .* - [F,L]
-
-    # Sensible Konfigurationsdateien sperren
-    RewriteRule ^\.git(/.*)?$ - [F,L]
-    RewriteRule ^\.env(\..*)?$ - [F,L]
-
-    # Typische WordPress-Scanner-Ziele sperren
-    RewriteRule ^(?:readme\.html|license\.txt)$ - [F,L,NC]
-
-    RewriteRule ^xmlrpc\.php$ - [F,L,NC]
-
-    # WooCommerce Customers API hart sperren
-    RewriteRule ^wp-json/wc/v3/customers/?$ - [F,L,NC]
-
-    # Author-Enumeration blocken
-    RewriteCond %{QUERY_STRING} (^|&)author=\d+(&|$) [NC]
-    RewriteRule .* - [F,L]
-
-    # REST-User-Enumeration / manipulierte rest_route-Zugriffe blocken
-    RewriteCond %{QUERY_STRING} (^|&)rest_route=/wp/v2/users/?(&|$) [NC,OR]
-    RewriteCond %{QUERY_STRING} (^|&)rest_route=wp/v2/users/?(&|$) [NC,OR]
-    RewriteCond %{QUERY_STRING} (^|&)restroute=/wp/v2/users/?(&|$) [NC,OR]
-    RewriteCond %{QUERY_STRING} (^|&)restroute=wp/v2/users/?(&|$) [NC]
-    RewriteRule .* - [F,L]
-
-</IfModule>
-# END Protected Paths
-
-# BEGIN Sensitive File Blocking
-# Zusaetzlicher Schutz ueber FilesMatch (greift auch ohne mod_rewrite)
-<FilesMatch "(^\.env$|^\.env\..+|^\.git|^readme\.html$|^license\.txt$|^xmlrpc\.php$|wp-config\.php$|wp-config\.php\.bak|\.htpasswd)$">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order deny,allow
-        Deny from all
-    </IfModule>
+# --- Sensible Dateien sperren ---
+<FilesMatch "^(wp-config\.php|wp-config\.php\.bak|wp-config-sample\.php|readme\.html|liesmich\.html|license\.txt|installer\.php|installer-backup\.php|debug\.log|error_log|php_errorlog|info\.php|phpinfo\.php|\.htpasswd)$">
+	Require all denied
 </FilesMatch>
-# END Sensitive File Blocking
 
-# BEGIN Bot Blocking
-<IfModule mod_rewrite.c>
-RewriteEngine On
+# SVGs dürfen kein Script ausführen, auch wenn sie direkt aufgerufen werden
+# (betrifft auch Mitglieder-Uploads über Gravity Forms in uploads/gravity_forms/)
+<FilesMatch "\.svg$">
+	<IfModule mod_headers.c>
+		Header always set Content-Security-Policy "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'"
+	</IfModule>
+</FilesMatch>
 
-    # Requests ohne User-Agent (z.B. rohe Bots)
-    RewriteCond %{HTTP_USER_AGENT} ^-?$ [OR]
+# --- Security-Header ---
+<IfModule mod_headers.c>
+	Header always set X-Content-Type-Options "nosniff"
+	Header always set X-Frame-Options "SAMEORIGIN"
+	Header always set Referrer-Policy "strict-origin-when-cross-origin"
+	Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+	Header unset X-Powered-By
+	Header always unset X-Powered-By
+	# HSTS kommt aus Cloudflare (SSL/TLS -> Edge Certificates), nicht hier doppelt setzen.
 
-    # SERankingBacklinksBot
-    RewriteCond %{HTTP_USER_AGENT} SERankingBacklinksBot [NC,OR]
-
-    # AliyunSecBot
-    RewriteCond %{HTTP_USER_AGENT} AliyunSecBot [NC,OR]
-
-    # Generischer WebScraperBot
-    RewriteCond %{HTTP_USER_AGENT} WebScraperBot [NC,OR]
-
-    # Barkrowler (babbar.tech)
-    RewriteCond %{HTTP_USER_AGENT} Barkrowler [NC,OR]
-
-    # TikTokSpider / ByteSpider (ByteDance)
-    RewriteCond %{HTTP_USER_AGENT} TikTokSpider [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} ByteSpider [NC,OR]
-
-    # Amzn-SearchBot
-    RewriteCond %{HTTP_USER_AGENT} Amzn-SearchBot [NC,OR]
-
-    # 2ip
-    RewriteCond %{HTTP_USER_AGENT} 2ip\ bot [NC,OR]
-
-    # visionheight.com scan
-    RewriteCond %{HTTP_USER_AGENT} visionheight\.comscan [NC,OR]
-
-    # --- Meta / Facebook ---
-    RewriteCond %{HTTP_USER_AGENT} facebookexternalhit [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} meta-externalfetcher [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Meta-ExternalAgent [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} meta-webindexer [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} meta-externalhit [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Facebot [NC,OR]
-
-    # --- OpenAI / ChatGPT ---
-    RewriteCond %{HTTP_USER_AGENT} GPTBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} ChatGPT-User [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} OAI-SearchBot [NC,OR]
-
-    # --- Anthropic / Claude ---
-    RewriteCond %{HTTP_USER_AGENT} ClaudeBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Claude-Web [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} anthropic-ai [NC,OR]
-
-    # --- Google AI ---
-    RewriteCond %{HTTP_USER_AGENT} Google-Extended [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} GoogleOther [NC,OR]
-
-    # --- Microsoft / Bing AI ---
-    RewriteCond %{HTTP_USER_AGENT} BingPreview [NC,OR]
-
-    # --- Perplexity ---
-    RewriteCond %{HTTP_USER_AGENT} PerplexityBot [NC,OR]
-
-    # --- Apple ---
-    RewriteCond %{HTTP_USER_AGENT} Applebot-Extended [NC,OR]
-
-    # --- Common Crawl ---
-    RewriteCond %{HTTP_USER_AGENT} CCBot [NC,OR]
-
-    # --- SEO Bots ---
-    RewriteCond %{HTTP_USER_AGENT} AhrefsBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} SemrushBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} DotBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} MJ12bot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} DataForSeoBot [NC,OR]
-
-    # --- Other AI Crawlers ---
-    RewriteCond %{HTTP_USER_AGENT} YouBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} cohere-ai [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} omgili [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} PetalBot [NC,OR]
-
-    # --- Misc Bad Bots ---
-    RewriteCond %{HTTP_USER_AGENT} YandexBot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Baiduspider [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} ia_archiver [NC,OR]
-
-    # --- Microsoft Bing ---
-    # bingbot: 11.734 Requests am 07.06.2026 (aggressivster Crawler im Log)
-    # Entfernen falls Bing-Indexierung gewuenscht ist
-    RewriteCond %{HTTP_USER_AGENT} bingbot [NC,OR]
-
-    # --- Duck.ai Crawler ---
-    # DuckAssistBot: 8 Requests am 07.06.2026
-    RewriteCond %{HTTP_USER_AGENT} DuckAssistBot [NC,OR]
-
-    # --- AI-Crawler (lyrenth.com) ---
-    # AIWebIndex: 8 Requests am 07.06.2026
-    RewriteCond %{HTTP_USER_AGENT} AIWebIndex [NC,OR]
-
-    # --- Palo Alto Cortex Xpanse Attack Surface Scanner ---
-    # 8 Requests am 07.06.2026
-    RewriteCond %{HTTP_USER_AGENT} "Palo Alto Networks" [NC,OR]
-
-    # --- SeznamBot (tschechische Suchmaschine) ---
-    # 25 Requests am 07.06.2026
-    RewriteCond %{HTTP_USER_AGENT} SeznamBot [NC,OR]
-
-    # --- Go-http-client (Script-Zugriffe ohne echten Browser) ---
-    # 66 Requests am 07.06.2026
-    RewriteCond %{HTTP_USER_AGENT} Go-http-client [NC,OR]
-
-    # --- Diverse Kleincrawler (Log 07.06.2026) ---
-    RewriteCond %{HTTP_USER_AGENT} VelenPublicWebCrawler [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} SumvinUCPCrawler [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} Pandalytics [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} coccocbot [NC,OR]
-    RewriteCond %{HTTP_USER_AGENT} semantic-visions [NC]
-
-    RewriteCond %{ENV:IP_WHITELISTED} !1
-    RewriteRule .* - [F,L]
+	# Content-Security-Policy – 2026-09-25 nach Report-Only-Test mit allen Borlabs-Einwilligungen scharf geschaltet
+	# (einziger Verstoß waren Google Fonts aus Ajax Search Pro -> per style.css abgestellt).
+	# Zum Testen neuer Dienste vorübergehend wieder auf Content-Security-Policy-Report-Only umstellen.
+	# Nicht für eingeloggte Nutzer (Beaver-Builder-Editor).
+	# 'unsafe-inline' nötig: WP Rocket/Borlabs nutzen onload-Handler, Nonces gehen mit dem Seiten-Cache nicht.
+	# Freigaben: Google Calendar API (calendar-julike, /convention-calendar/; FullCalendar liegt lokal im Plugin),
+	# reCAPTCHA (www.google.com/www.gstatic.com, Borlabs), Microsoft Clarity (Borlabs).
+	# Bewusst NICHT erlaubt: Google Fonts (Ajax Search Pro auf "inherit" gestellt).
+	# Neue externe Dienste (auch solche, die Borlabs nach Einwilligung lädt) hier freigeben!
+	<If "%{HTTP_COOKIE} !~ /wordpress_logged_in_/">
+		Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.clarity.ms https://scripts.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google.com https://www.gstatic.com https://*.clarity.ms https://c.bing.com; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://www.googleapis.com https://www.google.com https://*.clarity.ms https://c.bing.com; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"
+	</If>
 </IfModule>
-# END Bot Blocking
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+	RewriteBase /
+
+	# Versteckte Dateien/Ordner (.git, .env, ...) sperren, außer .well-known
+	RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+	# Duplicator-Reste und Backups/Dumps im Root sperren
+	RewriteRule ^(dup-installer|original_files_[^/]*)(/|$) - [F,L]
+	RewriteRule ^[^/]+\.(sql|bak|daf|zip|tar|gz|log)$ - [F,L]
+
+	# Kein PHP in den Uploads ausführen
+	RewriteRule ^wp-content/uploads/.*\.(php[0-9]?|phtml|phar)$ - [F,L,NC]
+
+	# Alte Ninja-Forms-Uploads (Videos/Audio von Mitgliedern) nicht direkt abrufbar
+	RewriteRule ^wp-content/uploads/ninja-forms/ - [F,L,NC]
+
+	# WordPress-Kerndateien, die nie direkt aufgerufen werden
+	RewriteRule ^wp-admin/includes/ - [F,L]
+	RewriteRule !^wp-includes/ - [S=3]
+	RewriteRule ^wp-includes/[^/]+\.php$ - [F,L]
+	RewriteRule ^wp-includes/js/tinymce/langs/.+\.php - [F,L]
+	RewriteRule ^wp-includes/theme-compat/ - [F,L]
+
+	# XML-RPC sperren (Angriffsziel für Brute-Force; nur nötig für Jetpack/WP-App)
+	RewriteRule ^xmlrpc\.php$ - [F,L]
+
+	# Autoren-Enumeration (?author=1) verhindern
+	RewriteCond %{REQUEST_URI} !^/wp-admin [NC]
+	RewriteCond %{QUERY_STRING} (^|&)author=\d+ [NC]
+	RewriteRule ^ - [F,L]
+
+	# REST-User-Enumeration über ?rest_route= (die /wp-json/-Variante sperrt die functions.php)
+	RewriteCond %{QUERY_STRING} (^|&)rest_?route=/?wp/v2/users [NC]
+	RewriteRule ^ - [F,L]
+</IfModule>
+
+# END jdev Security
+
 # BEGIN WordPress
 # The directives (lines) between "BEGIN WordPress" and "END WordPress" are
 # dynamically generated, and should only be modified via WordPress filters.

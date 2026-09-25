@@ -1172,3 +1172,15 @@ hr.ninja-forms-field {
 .page-id-3631 #applications, .page-id-3631 #about-and-support {
 	display: none;
 }
+/* 2026-09-25 jdev Ajax Search Pro: Schrift immer von der Seite übernehmen (Quicksand).
+   ASP gibt für Instanz 2 trotz "inherit" weiter Raleway/Open Sans aus und lädt sie von fonts.gstatic.com
+   (ohne Einwilligung, von der CSP blockiert). Werden die Schriften nirgends verwendet, lädt der Browser sie nicht. */
+div.asp_m, div.asp_m *, div.asp_r, div.asp_r *, div.asp_s, div.asp_s *,
+div.asp_m input::placeholder, div.asp_s input::placeholder {
+	font-family: inherit !important;
+}
+/* ASP setzt die Platzhalter zusätzlich mit Browser-Präfixen – eigene Regel, weil ein unbekannter
+   Präfix-Selektor die ganze Regel ungültig machen würde */
+div.asp_m input::-webkit-input-placeholder {
+	font-family: inherit !important;
+}

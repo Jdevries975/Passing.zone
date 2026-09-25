@@ -17,18 +17,161 @@ add_filter( 'option_show_avatars', '__return_false' );
 /* 2025-02-05 jdev Prevent Beaver Builder from deleting or modifying html...*/
 add_filter( 'fl_inline_editing_enabled', '__return_false' );
 
-/* 2025-02-05 jdev Add mime type .svg and .vcard */
-function jdev_ext_mimes ( $mimes ){
-$mimes['svg'] = 'image/svg+xml';
-$mimes['vcf'] = 'text/vcard';
-return $mimes;
+/* 2025-02-05 jdev Add mime type .svg and .vcard
+   2026-09-25 jdev SVG only for members (author and above, "publish_posts") and sanitized on every
+   upload path: media library (wp_handle_upload/sideload prefilter) and the Gravity Forms pattern
+   image (pz_gf_set_featured_and_acf_image() creates the attachment directly from the GF file, which
+   bypasses the WordPress upload filters). Type check by file extension, not by the browser's
+   Content-Type (spoofable). Directly opened SVGs additionally get a script-src 'none' CSP (.htaccess). */
+function jdev_ext_mimes( $mimes ) {
+	if ( current_user_can( 'publish_posts' ) ) {
+		$mimes['svg'] = 'image/svg+xml';
+	}
+	$mimes['vcf'] = 'text/vcard';
+	return $mimes;
 }
 add_filter( 'upload_mimes', 'jdev_ext_mimes' );
+
+function jdev_is_svg_filename( $name ) {
+	return 'svg' === strtolower( pathinfo( (string) $name, PATHINFO_EXTENSION ) );
+}
+
+/* Sanitizes the SVG at $path in place. Returns '' on success, otherwise an error message
+   (the file is then left untouched and must not be used). */
+function jdev_sanitize_svg_file( $path ) {
+	// Bound resource usage before we even try to parse the file.
+	if ( ! $path || ! is_file( $path ) || filesize( $path ) > 2 * 1024 * 1024 ) {
+		return __( 'SVG file is missing or too large.' );
+	}
+
+	$svg = file_get_contents( $path );
+	if ( false === $svg || '' === trim( $svg ) ) {
+		return __( 'Could not read the uploaded SVG file.' );
+	}
+
+	// Reject polyglot files: anything that could be reinterpreted as server
+	// side script has no business in an SVG.
+	if ( preg_match( '/<\?php|<%/i', $svg ) ) {
+		return __( 'This SVG file contains disallowed markup.' );
+	}
+
+	// Illustrator and other tools emit a standard <!DOCTYPE svg PUBLIC ...>.
+	// We don't need it and it's the classic XXE/entity-expansion vector, so
+	// strip any DOCTYPE (including an internal subset) outright.
+	$svg = preg_replace( '/<!DOCTYPE\b[^>\[]*(\[[^\]]*\])?[^>]*>/is', '', $svg );
+
+	libxml_use_internal_errors( true );
+	$doc = new DOMDocument();
+	// LIBXML_NONET blocks network fetches; entity substitution stays disabled (default).
+	$loaded = $doc->loadXML( $svg, LIBXML_NONET );
+	libxml_clear_errors();
+
+	if ( ! $loaded || ! $doc->documentElement ) {
+		return __( 'This file is not a valid SVG.' );
+	}
+	$root = $doc->documentElement;
+	if ( 'svg' !== strtolower( $root->localName ) || 'http://www.w3.org/2000/svg' !== $root->namespaceURI ) {
+		return __( 'This file is not a valid SVG.' );
+	}
+
+	$xpath = new DOMXPath( $doc );
+
+	// Drop elements that can execute or load code/markup: script, foreignObject
+	// (embedded HTML) and SMIL animation elements (can rewrite href/on* at runtime).
+	$dangerous_elements = '//*[local-name()="script"]'
+		. ' | //*[local-name()="foreignObject"]'
+		. ' | //*[local-name()="animate"]'
+		. ' | //*[local-name()="animateMotion"]'
+		. ' | //*[local-name()="animateTransform"]'
+		. ' | //*[local-name()="animateColor"]'
+		. ' | //*[local-name()="set"]'
+		. ' | //*[local-name()="link"]';
+	foreach ( $xpath->query( $dangerous_elements ) as $node ) {
+		$node->parentNode->removeChild( $node );
+	}
+
+	// <style> can carry @import/url()/expression() based exfiltration.
+	foreach ( $xpath->query( '//*[local-name()="style"]' ) as $style ) {
+		if ( preg_match( '/@import|url\s*\(|expression\s*\(|javascript:/i', $style->textContent ) ) {
+			$style->parentNode->removeChild( $style );
+		}
+	}
+
+	foreach ( $xpath->query( '//@*' ) as $attr ) {
+		$local = strtolower( $attr->localName );
+		$value = preg_replace( '/[\x00-\x1F\s]+/', '', (string) $attr->nodeValue );
+
+		// Any on* event handler (onload, onclick, ...).
+		if ( 0 === strpos( $local, 'on' ) ) {
+			$attr->ownerElement->removeAttributeNode( $attr );
+			continue;
+		}
+		// xml:base can retarget how relative URLs resolve.
+		if ( 'base' === $local && 'xml' === $attr->prefix ) {
+			$attr->ownerElement->removeAttributeNode( $attr );
+			continue;
+		}
+		if ( 'href' === $local ) {
+			if ( preg_match( '/^(javascript|vbscript):/i', $value ) ) {
+				$attr->ownerElement->removeAttributeNode( $attr );
+				continue;
+			}
+			// Only inline raster-image data URIs; no nested SVG or data:text/html.
+			if ( 0 === stripos( $value, 'data:' ) && ! preg_match( '/^data:image\/(png|jpe?g|gif|webp);base64,/i', $value ) ) {
+				$attr->ownerElement->removeAttributeNode( $attr );
+			}
+		}
+	}
+
+	$sanitized = $doc->saveXML( $doc->documentElement );
+	if ( false === $sanitized || '' === trim( $sanitized ) || false === file_put_contents( $path, $sanitized ) ) {
+		return __( 'SVG sanitization failed.' );
+	}
+	return '';
+}
+
+function jdev_sanitize_svg_upload( $file ) {
+	if ( ! jdev_is_svg_filename( $file['name'] ?? '' ) ) {
+		return $file;
+	}
+	// Defense in depth: upload_mimes already gates this, but another plugin
+	// could re-add the svg mime for other roles.
+	if ( ! current_user_can( 'publish_posts' ) ) {
+		$file['error'] = __( 'SVG uploads are restricted to members.' );
+		return $file;
+	}
+	$error = jdev_sanitize_svg_file( $file['tmp_name'] ?? '' );
+	if ( '' !== $error ) {
+		$file['error'] = $error;
+	}
+	return $file;
+}
+add_filter( 'wp_handle_upload_prefilter', 'jdev_sanitize_svg_upload' );
+add_filter( 'wp_handle_sideload_prefilter', 'jdev_sanitize_svg_upload' );
+/* END of mime type svg block*/
 
 /*2025-02-05 jdev Prevent Beaver Builder from fetching Google Fonts from Google */
 add_filter( 'fl_builder_google_fonts_pre_enqueue', function( $fonts ) {
 return array();
 } );
+
+/* 2026-09-25 jdev Ajax Search Pro prints a preconnect to fonts.gstatic.com and @font-face rules
+   (Raleway, Open Sans) pointing to Google into every page, even with all its fonts set to "inherit".
+   Browsers then fetched the fonts from Google without consent (and the CSP blocks them). Strip both
+   from the HTML; the search uses the site font via style.css. Runs inside WP Rocket's buffer, so the
+   cached pages are clean as well -> clear the WP Rocket cache after deploying. */
+function jdev_strip_google_fonts( $html ) {
+	if ( false === strpos( $html, 'fonts.g' ) ) {
+		return $html;
+	}
+	$out = preg_replace( '#<link[^>]+href=["\']https://fonts\.(gstatic|googleapis)\.com[^>]*>#i', '', $html );
+	$out = preg_replace( '#@font-face\s*\{[^{}]*fonts\.gstatic\.com[^{}]*\}#i', '', (string) $out );
+	// preg_replace returns null on a PCRE error -> never send an empty page.
+	return ( null === $out || '' === $out ) ? $html : $out;
+}
+add_action( 'template_redirect', function () {
+	ob_start( 'jdev_strip_google_fonts' );
+}, 1 );
 
 /* 2026-07-19 jdev Load FontAwesome 7.3.1, forces Beaver Builder to use the self-hosted version */
 /* 2026-07-30 jdev Do NOT replace the plugins' own Font Awesome inside the Beaver Builder editor/UI:
@@ -1148,6 +1291,16 @@ function pz_gf_set_featured_and_acf_image( $post_id, $entry ) {
     if ( ! file_exists( $file_path ) ) {
         return;
     }
+    // 2026-09-25 jdev: GF stores the upload itself, the WP upload filters never see it ->
+    // sanitize SVGs here; on failure don't attach it and remove the file.
+    if ( jdev_is_svg_filename( $file_path ) ) {
+        $svg_error = jdev_sanitize_svg_file( $file_path );
+        if ( '' !== $svg_error ) {
+            error_log( 'pz_gf_set_featured_and_acf_image(): rejected SVG for post ' . $post_id . ' - ' . $svg_error );
+            @unlink( $file_path );
+            return;
+        }
+    }
     require_once ABSPATH . 'wp-admin/includes/image.php';
     $attachment_id = wp_insert_attachment(
         [
@@ -1842,6 +1995,18 @@ function pz_gf_generate_username_from_name( $username, $feed, $form, $entry ) {
    consistently never advertised in the first place. */
 remove_action( 'wp_head', 'rest_output_link_wp_head', 10 );
 remove_action( 'template_redirect', 'rest_output_link_header', 11 );
+
+/* 2026-09-25 jdev Don't expose user names via the REST API: /wp/v2/users listed all
+   58 login slugs publicly (one derived from an e-mail address). Only logged-in users
+   who can edit posts get it (backend author picker etc.); the pattern form fills its
+   user choices server-side via get_users() and doesn't need the endpoint. */
+function jdev_restrict_rest_users( $result, $server, $request ) {
+	if ( preg_match( '#^/wp/v2/users(/|$)#', $request->get_route() ) && ! current_user_can( 'edit_posts' ) ) {
+		return new WP_Error( 'rest_user_cannot_view', __( 'Sorry, you are not allowed to list users.' ), array( 'status' => rest_authorization_required_code() ) );
+	}
+	return $result;
+}
+add_filter( 'rest_pre_dispatch', 'jdev_restrict_rest_users', 10, 3 );
 
 /* 2026-07-21 jdev After login, send all members up to and including author
    directly to the pattern upload page, instead of the wp-admin dashboard
