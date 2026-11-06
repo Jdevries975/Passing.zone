@@ -1172,15 +1172,32 @@ hr.ninja-forms-field {
 .page-id-3631 #applications, .page-id-3631 #about-and-support {
 	display: none;
 }
-/* 2026-09-25 jdev Ajax Search Pro: Schrift immer von der Seite übernehmen (Quicksand).
-   ASP gibt für Instanz 2 trotz "inherit" weiter Raleway/Open Sans aus und lädt sie von fonts.gstatic.com
-   (ohne Einwilligung, von der CSP blockiert). Werden die Schriften nirgends verwendet, lädt der Browser sie nicht. */
+/* 2026-09-25 jdev Ajax Search Pro: always use the site font (Quicksand).
+   ASP still outputs Raleway/Open Sans for instance 2 despite "inherit" and loads them from fonts.gstatic.com
+   (without consent, blocked by the CSP). If the fonts are not used anywhere, the browser does not load them.
+   2026-11-06 jdev Set Quicksand explicitly instead of "inherit": with "inherit" the search took on the font
+   of whatever element it sits in (e.g. Obelix in headings/.obelix), and form fields fell back to the system font. */
 div.asp_m, div.asp_m *, div.asp_r, div.asp_r *, div.asp_s, div.asp_s *,
 div.asp_m input::placeholder, div.asp_s input::placeholder {
-	font-family: inherit !important;
+	font-family: 'Quicksand', sans-serif !important;
 }
 /* ASP setzt die Platzhalter zusätzlich mit Browser-Präfixen – eigene Regel, weil ein unbekannter
    Präfix-Selektor die ganze Regel ungültig machen würde */
 div.asp_m input::-webkit-input-placeholder {
-	font-family: inherit !important;
+	font-family: 'Quicksand', sans-serif !important;
+}
+/* 2026-11-06 jdev ASP sets Raleway on the search field with ID selectors (#ajaxsearchpro2_1 ... input.orig),
+   which beat the generic rule above even with !important. Same selectors, prefixed with "html body" so ours win. */
+html body #ajaxsearchpro2_1 .probox .proinput input.orig,
+html body #ajaxsearchpro2_2 .probox .proinput input.orig,
+html body div.asp_m.asp_m_2 .probox .proinput input.orig,
+html body #ajaxsearchpro2_1 .probox .proinput input.autocomplete,
+html body #ajaxsearchpro2_2 .probox .proinput input.autocomplete,
+html body div.asp_m.asp_m_2 .probox .proinput input.autocomplete {
+	font-family: 'Quicksand', sans-serif !important;
+}
+html body #ajaxsearchpro2_1 .probox .proinput input.orig::placeholder,
+html body #ajaxsearchpro2_2 .probox .proinput input.orig::placeholder,
+html body div.asp_m.asp_m_2 .probox .proinput input.orig::placeholder {
+	font-family: 'Quicksand', sans-serif !important;
 }

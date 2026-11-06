@@ -2032,3 +2032,18 @@ add_action( 'login_init', function () {
         exit;
     }
 } );
+
+/* 2026-11-06 jdev Stop the routine WordPress update emails to the admin:
+   - plugin/theme auto-update emails (success and failure)
+   - core auto-update emails, except "critical" (the update broke and the
+     site may need manual repair)
+   - "a new WordPress version is available" emails
+   - debug emails (only sent on development versions)
+   Recovery mode emails (fatal errors) are not affected. */
+add_filter( 'auto_plugin_update_send_email', '__return_false' );
+add_filter( 'auto_theme_update_send_email', '__return_false' );
+add_filter( 'auto_core_update_send_email', function ( $send, $type ) {
+    return 'critical' === $type ? $send : false;
+}, 10, 2 );
+add_filter( 'send_core_update_notification_email', '__return_false' );
+add_filter( 'automatic_updates_send_debug_email', '__return_false' );
