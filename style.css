@@ -383,7 +383,7 @@ body, .quicksand {
 .pz-cats-tags {
 	margin: auto;	
 }
-.pz-cats-tags a, a.pp-post-meta-term {
+.pz-cats-tags a, a.pp-post-meta-term, a.pz-related-term {
 	color: #fff !important;
 	padding: 0px 5px;
 	/*background: var(--pz-dark);*/
@@ -399,7 +399,7 @@ body, .quicksand {
 	grid-gap: 0px	
 }
 
-.pz-cats-tags a:hover, .pz-difficulty-wrapper .pz-difficulty-text:hover, a.pp-post-meta-term:hover {
+.pz-cats-tags a:hover, .pz-difficulty-wrapper .pz-difficulty-text:hover, a.pp-post-meta-term:hover, a.pz-related-term:hover {
 	border: 1px solid #fff;
 	color: #fff !important;
 } 
@@ -1200,4 +1200,60 @@ html body #ajaxsearchpro2_1 .probox .proinput input.orig::placeholder,
 html body #ajaxsearchpro2_2 .probox .proinput input.orig::placeholder,
 html body div.asp_m.asp_m_2 .probox .proinput input.orig::placeholder {
 	font-family: 'Quicksand', sans-serif !important;
+}
+/* 2026-11-09 jdev [pz_related_patterns] (functions.php): related patterns as cards like
+   "Newest Patterns" on the homepage. No hover effect on the cards. */
+.pz-related-heading {
+	margin-bottom: 20px;
+	font-size: 29px;
+	font-weight: 400;
+	line-height: 1.2em;
+	color: var(--pz-dark);
+}
+.pz-related-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 40px;
+}
+.pz-related-image {
+	display: block;
+}
+.pz-related-image img {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	border-radius: 8px 8px 0 0;
+}
+.pz-related-title,
+.pz-related-date,
+.pz-related-terms {
+	padding: 0 10px;
+}
+.pz-related-title {
+	margin: 18px 0 8px;
+	font-size: 29px;
+	font-weight: 400;
+	line-height: 1.2em;
+	text-transform: none;
+}
+.pz-related-title a,
+.pz-related-title a:hover {
+	color: var(--pz-dark);
+	text-decoration: none;
+}
+.pz-related-date {
+	font-size: 14px;
+	color: var(--pz-dark);
+}
+.pz-related-terms {
+	margin-top: 20px;
+	line-height: 1.8;
+}
+@media (max-width: 768px) {
+	.pz-related-grid {
+		grid-template-columns: 1fr;
+		gap: 30px;
+	}
 }

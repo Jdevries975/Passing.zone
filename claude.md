@@ -14,6 +14,11 @@
 - **Borlabs Cookie**
 - **Gravity Forms** for registration, login all forms and also pattern upload
 - **Ajax Search Pro**, **Matomo** (ohne Cookies), **Wordfence**, eigenes Plugin **calendar-julike** (FullCalendar lokal)
+- **Ähnliche Patterns:** kein Plugin mehr (Related Posts Thumbnails wurde 2026-11-09 gelöscht), sondern Shortcode
+  `[pz_related_patterns]` in `functions.php`, eingebunden im Themer-Layout „Single Pattern“. Karten wie
+  „Newest Patterns“ auf der Startseite (Bild, Titel, Datum, Schwierigkeit, Anzahl Jongleur:innen), CSS in
+  `style.css` (`.pz-related-*`). Auswahl: zufällig, gleicher `pattern-type` oder `pattern-tag`.
+  Attribute: `count` (Standard 3), `heading` (Standard „More patterns to try:“).
 
 ## Sicherheit (Stand 2026-09-25)
 

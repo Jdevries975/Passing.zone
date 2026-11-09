@@ -2047,3 +2047,101 @@ add_filter( 'auto_core_update_send_email', function ( $send, $type ) {
 }, 10, 2 );
 add_filter( 'send_core_update_notification_email', '__return_false' );
 add_filter( 'automatic_updates_send_debug_email', '__return_false' );
+
+/* 2026-11-09 jdev [pz_related_patterns]: related patterns as cards like
+   "Newest Patterns" on the homepage (image, title, date, difficulty,
+   number of jugglers). Replaces the Related Posts Thumbnails plugin, which
+   can only show image + title. Place it in the Themer "Single Pattern" layout.
+   Picks random patterns that share a pattern type or tag with the current
+   one; fills up with other random patterns if there are not enough.
+   Attributes: count (default 3), heading (default "More patterns to try:"). */
+function pz_related_patterns_shortcode( $atts ) {
+    $atts = shortcode_atts( [
+        'count'   => 3,
+        'heading' => 'More patterns to try:',
+    ], $atts, 'pz_related_patterns' );
+
+    $post_id = get_the_ID();
+    $count   = max( 1, (int) $atts['count'] );
+    if ( ! $post_id ) {
+        return '';
+    }
+
+    $base_args = [
+        'post_type'           => 'pattern',
+        'post_status'         => 'publish',
+        'orderby'             => 'rand',
+        'no_found_rows'       => true,
+        'ignore_sticky_posts' => true,
+    ];
+
+    // Patterns sharing a pattern type or tag.
+    $tax_query = [ 'relation' => 'OR' ];
+    foreach ( [ 'pattern-type', 'pattern-tag' ] as $taxonomy ) {
+        $term_ids = wp_get_post_terms( $post_id, $taxonomy, [ 'fields' => 'ids' ] );
+        if ( ! is_wp_error( $term_ids ) && $term_ids ) {
+            $tax_query[] = [ 'taxonomy' => $taxonomy, 'field' => 'term_id', 'terms' => $term_ids ];
+        }
+    }
+
+    $related = [];
+    if ( count( $tax_query ) > 1 ) {
+        $related = get_posts( $base_args + [
+            'posts_per_page' => $count,
+            'post__not_in'   => [ $post_id ],
+            'tax_query'      => $tax_query,
+        ] );
+    }
+    if ( count( $related ) < $count ) {
+        $related = array_merge( $related, get_posts( $base_args + [
+            'posts_per_page' => $count - count( $related ),
+            'post__not_in'   => array_merge( [ $post_id ], wp_list_pluck( $related, 'ID' ) ),
+        ] ) );
+    }
+    if ( ! $related ) {
+        return '';
+    }
+
+    ob_start();
+    ?>
+    <div class="pz-related">
+        <?php if ( '' !== $atts['heading'] ) : ?>
+            <p class="pz-related-heading"><?php echo esc_html( $atts['heading'] ); ?></p>
+        <?php endif; ?>
+        <div class="pz-related-grid">
+            <?php foreach ( $related as $pattern ) :
+                $link  = get_permalink( $pattern );
+                $title = get_the_title( $pattern );
+                $terms = [];
+                foreach ( [ 'pattern-difficulty', 'number-of-jugglers' ] as $taxonomy ) {
+                    $tax_terms = get_the_terms( $pattern, $taxonomy );
+                    if ( $tax_terms && ! is_wp_error( $tax_terms ) ) {
+                        $terms = array_merge( $terms, $tax_terms );
+                    }
+                }
+                ?>
+                <article class="pz-related-card">
+                    <a class="pz-related-image" href="<?php echo esc_url( $link ); ?>" tabindex="-1" aria-hidden="true">
+                        <?php echo get_the_post_thumbnail( $pattern, 'medium_large', [ 'alt' => '' ] ); ?>
+                    </a>
+                    <h3 class="pz-related-title"><a href="<?php echo esc_url( $link ); ?>"><?php echo esc_html( $title ); ?></a></h3>
+                    <div class="pz-related-date"><?php echo esc_html( get_the_date( 'j. F Y', $pattern ) ); ?></div>
+                    <?php if ( $terms ) : ?>
+                        <div class="pz-related-terms">
+                            <?php foreach ( $terms as $term ) :
+                                $term_link = get_term_link( $term );
+                                if ( is_wp_error( $term_link ) ) {
+                                    continue;
+                                } ?>
+                                <a class="pz-related-term" href="<?php echo esc_url( $term_link ); ?>"><?php echo esc_html( $term->name ); ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'pz_related_patterns', 'pz_related_patterns_shortcode' );
