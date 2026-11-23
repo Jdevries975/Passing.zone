@@ -28,6 +28,11 @@
 2. **Nach Plugin-Updates** (WP Rocket, Wordfence, ShortPixel schreiben die `.htaccess` neu) prüfen, ob
    `# BEGIN jdev Security` noch in der Server-`.htaccess` steht. Die eigenen Blöcke sind schon einmal verloren gegangen.
    Vor jedem `.htaccess`-Upload die Server-Datei sichern (lokal `backup/`, nicht eingecheckt).
+3. **„Umleitungsfehler“ (https → http → https …)** → im KAS ist der SSL-Schutz von passing.zone deaktiviert
+   (all-inkl leitet HTTPS dann auf HTTP um, Cloudflare wieder zurück). Let's Encrypt geht bei all-inkl nicht,
+   weil die Domain auf Cloudflare zeigt. Lösung (2026-11-23): **Cloudflare-Origin-Zertifikat** (15 Jahre, bis
+   ca. 2041) im KAS unter SSL-Schutz eingetragen (KEY + CRT, CSR/Brückenzertifikate leer; SSL erzwingen ja,
+   HSTS nein, weil Cloudflare HSTS setzt). Cloudflare-SSL-Modus: **Full (strict)**. Danach Cloudflare-Cache leeren.
 
 ### Wo was geregelt ist
 - **`.htaccess`, Block `jdev Security`** (vor `# BEGIN WordPress`): Security-Header, CSP (scharf, nur für nicht

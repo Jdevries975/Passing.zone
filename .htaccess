@@ -18,7 +18,7 @@ FileETag None
 <IfModule mod_alias.c>
 <FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml)$">
 <IfModule mod_headers.c>
-Header set X-Powered-By "WP Rocket/3.23.4"
+Header set X-Powered-By "WP Rocket/3.24.1"
 Header unset Pragma
 Header append Cache-Control "public"
 Header unset Last-Modified
@@ -236,6 +236,8 @@ RewriteRule . /index.php [L]
            # Does the browser support avif?
            RewriteCond %{HTTP_ACCEPT} image/avif
            # AND is the request a JPG, PNG, or WebP? (no GIFs because the animation is sometimes lost in AVIF);
+		   # WebP is included on purpose: an .avif only exists when it came out smaller, so
+		   # serving it also pays off for WebP files uploaded straight to the media library.
 		   # (also grab the basepath %1 to match in the next rule)
            RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|webp)$
            # AND does a .avif image exist?
@@ -255,10 +257,7 @@ RewriteRule . /index.php [L]
 
            </IfModule>
            <IfModule mod_headers.c>
-           # If REDIRECT_avif env var exists, append Accept to the Vary header
-           Header append Vary Accept env=REDIRECT_avif
-
-           <FilesMatch ".(webp)$">
+           <FilesMatch "\.(avif)$">
                Header set Cache-Control "max-age=31536000, public"
            </FilesMatch>
            </IfModule>
@@ -269,14 +268,10 @@ RewriteRule . /index.php [L]
            <IfModule mod_rewrite.c>
              RewriteEngine On
              ##### TRY FIRST the file appended with .webp (ex. test.jpg.webp) #####
-             # Is the browser Chrome?
-             RewriteCond %{HTTP_USER_AGENT} Chrome [OR]
-             # OR Is this request from Page Speed
-             RewriteCond %{HTTP_USER_AGENT} "Google Page Speed Insights" [OR]
-             # OR does this browser explicitly support webp
+             # Does the browser support webp? Only the Accept header decides: a
+             # user-agent match would also hand webp to a client that asked for
+             # "Accept: image/jpeg", and no Vary value can describe that.
              RewriteCond %{HTTP_ACCEPT} image/webp
-             # AND NOT MS EDGE 42/17 - doesnt work.
-             RewriteCond %{HTTP_USER_AGENT} !Edge/17
              # AND is the request a jpg, png, or gif?
              RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|gif)$
              # AND does a .ext.webp image exist?
@@ -284,10 +279,7 @@ RewriteRule . /index.php [L]
              # THEN send the webp image and set the env var webp
              RewriteRule ^(.+)$ $1.webp [NC,T=image/webp,E=webp,L]
              ##### IF NOT, try the file with replaced extension (test.webp) #####
-             RewriteCond %{HTTP_USER_AGENT} Chrome [OR]
-             RewriteCond %{HTTP_USER_AGENT} "Google Page Speed Insights" [OR]
              RewriteCond %{HTTP_ACCEPT} image/webp
-             RewriteCond %{HTTP_USER_AGENT} !Edge/17
              # AND is the request a jpg, png, or gif? (also grab the basepath %1 to match in the next rule)
              RewriteCond %{REQUEST_URI} ^(.+)\.(?:jpe?g|png|gif)$
              # AND does a .webp image exist?
@@ -296,14 +288,18 @@ RewriteRule . /index.php [L]
              RewriteRule (.+)\.(?:jpe?g|png|gif)$ $1.webp [NC,T=image/webp,E=webp,L]
            </IfModule>
            <IfModule mod_headers.c>
-             # If REDIRECT_webp env var exists, append Accept to the Vary header
-             Header append Vary Accept env=REDIRECT_webp
-             <FilesMatch ".(avif)$">
+             <FilesMatch "\.(webp)$">
                Header set Cache-Control "max-age=31536000, public"
              </FilesMatch>
            </IfModule>
            <IfModule mod_mime.c>
              AddType image/webp .webp
+           </IfModule>
+           
+           <IfModule mod_headers.c>
+             <FilesMatch "\.(jpe?g|png|gif|webp|avif)$">
+               Header append Vary Accept
+             </FilesMatch>
            </IfModule>
            
 # END ShortPixelWebp
