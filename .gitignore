@@ -38,3 +38,6 @@ terraform.rc
 
 # WordPress secrets - contains DB credentials and auth keys, never commit
 wp-config.php
+
+# Local backups of server files (see CLAUDE.md), never commit
+backup/
